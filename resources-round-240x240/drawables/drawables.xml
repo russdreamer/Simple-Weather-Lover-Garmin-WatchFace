@@ -1,0 +1,19 @@
+<drawables>
+    <bitmap id="LauncherIcon" filename="launcher_icon.png" />
+    <bitmap id="StepsIcon" filename="steps.png" />
+    <bitmap id="SnowIcon" filename="snow.png" />
+    <bitmap id="ClearDayIcon" filename="clear_day.png" />
+    <bitmap id="ClearNightIcon" filename="clear_night.png" />
+    <bitmap id="CloudyIcon" filename="cloudy.png" />
+    <bitmap id="HailIcon" filename="hail.png" />
+    <bitmap id="LiteRainIcon" filename="lite_rain.png" />
+    <bitmap id="MistIcon" filename="mist.png" />
+    <bitmap id="MostlyCloudyDayIcon" filename="mostly_cloudy_day.png" />
+    <bitmap id="MostlyCloudyNightIcon" filename="mostly_cloudy_night.png" />
+    <bitmap id="RainIcon" filename="rain.png" />
+    <bitmap id="SnowRainIcon" filename="snow_rain.png" />
+    <bitmap id="TornadoIcon" filename="tornado.png" />
+    <bitmap id="WindIcon" filename="wind.png" />
+    <bitmap id="ThunderIcon" filename="thunder.png" />
+    <bitmap id="UnknownPrecipitationIcon" filename="unknown_precipitation.png" />
+</drawables>
