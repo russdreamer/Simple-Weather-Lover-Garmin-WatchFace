@@ -288,7 +288,7 @@ class IgafaceView extends WatchUi.WatchFace {
         clearDataFields();
     }
 
-    function onBackgroundData(data as Array<Dictionary>) {
+    function onBackgroundData(data) {
         if (data != null && data instanceof Array) {
             externalWeather = processBackgroundData(data);
         }
@@ -713,17 +713,18 @@ class IgafaceView extends WatchUi.WatchFace {
             if (lastExternalWeatherTime != null) {
                 if (now.compare(lastExternalWeatherTime) > 0) {
                     if (externalWeather != null) {
-                        if ((isPositionChanged() && now.compare(lastExternalWeatherTime).abs() > 5 * 60) || now.compare(lastExternalWeatherTime).abs() > 60 * 60) {
+                        if ((isPositionChanged() && now.compare(lastExternalWeatherTime) > 5 * 60) || now.compare(lastExternalWeatherTime) > 60 * 60) {
                             lastExternalWeatherTime = now;
+                            needToregister = true;
                         }
                     } else {
-                        if (now.compare(lastExternalWeatherTime).abs() > 5 * 60) {
+                        if (now.compare(lastExternalWeatherTime) > 5 * 60) {
                             lastExternalWeatherTime = now;
                         } else {
                             lastExternalWeatherTime = lastExternalWeatherTime.add(FIVE_MINUTES);
                         }
+                        needToregister = true;
                     }
-                    needToregister = true;
                 }
             } else {
                 needToregister = true;
