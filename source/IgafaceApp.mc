@@ -4,6 +4,7 @@ import Toybox.WatchUi;
 
 class IgafaceApp extends Application.AppBase {
     var watchFace = null;
+    var inBackground = false;
 
     function initialize() {
         AppBase.initialize();
@@ -15,6 +16,9 @@ class IgafaceApp extends Application.AppBase {
 
     // onStop() is called when your application is exiting
     function onStop(state as Dictionary?) as Void {
+        if (!inBackground) {
+            Toybox.Background.deleteTemporalEvent();
+        }
     }
 
     // Return the initial view of your application here
@@ -24,6 +28,7 @@ class IgafaceApp extends Application.AppBase {
     }
 
     function getServiceDelegate() as Array<Toybox.System.ServiceDelegate> {
+        inBackground = true;
         return [ new ExternalWeatherService() ] as Array<Toybox.System.ServiceDelegate>;
     }
 
@@ -34,11 +39,18 @@ class IgafaceApp extends Application.AppBase {
     }
 
     function onBackgroundData(data) {
-        if (watchFace != null) {
-            watchFace.onBackgroundData(data);
-        }
+        System.println("data received: " + data);
     }
 
+    function  onStorageChanged() {
+        System.println("onStorageChanged called");
+        if (watchFace != null) {
+            var weatherData = Toybox.Application.Storage.getValue("weatherData");
+            if (weatherData != null) {
+                watchFace.onBackgroundData(weatherData);
+            }
+        }
+    }
 }
 
 function getApp() as IgafaceApp {

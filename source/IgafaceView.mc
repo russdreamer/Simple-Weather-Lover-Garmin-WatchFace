@@ -41,7 +41,6 @@ class IgafaceView extends WatchUi.WatchFace {
     var isShiftingWeatherAvailable;
     var previousObservationLocationName;
     var cachedCityName;
-    var lastExternalWeatherTime;
     var externalWeather;
 
     var ClearDayIcon;
@@ -124,8 +123,6 @@ class IgafaceView extends WatchUi.WatchFace {
         isShiftingWeatherAvailable = false;
         previousObservationLocationName = null;
         cachedCityName = null;
-        var savedLastWeatherCheckTime = Storage.getValue("igawf_last_external_weather_time");
-        lastExternalWeatherTime = savedLastWeatherCheckTime != null ? new Time.Moment(savedLastWeatherCheckTime) : null;
         externalWeather = null;
     }
 
@@ -289,8 +286,12 @@ class IgafaceView extends WatchUi.WatchFace {
     }
 
     function onBackgroundData(data) {
+        System.println("onBackgroundData Watch Face method");
+        Toybox.Application.Storage.deleteValue("weatherData");
         if (data != null && data instanceof Array) {
+            System.println("data is Array type");
             externalWeather = processBackgroundData(data);
+            System.println("data added to external");
         }
     }
 
@@ -313,11 +314,6 @@ class IgafaceView extends WatchUi.WatchFace {
         });
     }
 
-    function getCurrentTimeString() as String {
-        var now = Time.now();
-        return getCurrentUTCTimeString(now);
-    }
-
     function getCurrentUTCTimeString(now) as String {
         var newTime = now.subtract(new Time.Duration(System.getClockTime().timeZoneOffset));
         var currentTime = Gregorian.info(newTime, Time.FORMAT_SHORT);
@@ -328,7 +324,7 @@ class IgafaceView extends WatchUi.WatchFace {
     }
 
     function isWeatherSourceChanged() as Boolean {
-        var isCurrentWeatherNotExternal = weatherConditions == null || hourlyForecast == null || weatherConditions instanceof Toybox.Weather.CurrentConditions || hourlyForecast instanceof Toybox.Weather.HourlyForecast;
+        var isCurrentWeatherNotExternal = weatherConditions == null || hourlyForecast == null || Toybox has :Weather && (weatherConditions instanceof Toybox.Weather.CurrentConditions || hourlyForecast[0] instanceof Toybox.Weather.HourlyForecast);
         return externalWeather != null && isCurrentWeatherNotExternal;
     }
 
@@ -442,7 +438,7 @@ class IgafaceView extends WatchUi.WatchFace {
 
     function setDetailedWeatherInfo(weatherConditions, forecast) {
         var locationName = null;
-        if (weatherConditions instanceof Toybox.Weather.CurrentConditions) {
+        if (Toybox has :Weather && weatherConditions instanceof Toybox.Weather.CurrentConditions) {
             locationName = getCurrentLocationName(weatherConditions);
         } else {
             locationName = getCurrentLocationName(null);
@@ -457,7 +453,7 @@ class IgafaceView extends WatchUi.WatchFace {
         var cityName = null;
 
         if (Toybox has :Weather) {
-            if (weatherConditions == null || ! (weatherConditions instanceof Toybox.Weather.CurrentConditions)) {
+            if (weatherConditions == null || ! (Toybox has :Weather && weatherConditions instanceof Toybox.Weather.CurrentConditions)) {
                 weatherConditions = Weather.getCurrentConditions();
             }
             if (weatherConditions != null) {
@@ -523,8 +519,8 @@ class IgafaceView extends WatchUi.WatchFace {
                 weatherIcon = getWeatherIcon(getWeatherCondition(forecast), isDay);
             }
         }  else {
-            var weatherCode = weatherConditions["weatherCode"];
-            var isDay = forecast["isDay"].equals("1");
+            var weatherCode = forecast["weatherCode"];
+            var isDay = forecast["isDay"];
             if (weatherCode != null && isDay != null) {
                 weatherIcon = getWMOWeatherIcon(weatherCode, isDay);
             }
@@ -545,7 +541,7 @@ class IgafaceView extends WatchUi.WatchFace {
             }
         } else {
             var weatherCode = weatherConditions["weatherCode"];
-            var isDay = weatherConditions["isDay"].equals("1");
+            var isDay = weatherConditions["isDay"];
             if (weatherCode != null && isDay != null) {
                 weatherIcon = getWMOWeatherIcon(weatherCode, isDay);
             }
@@ -561,9 +557,9 @@ class IgafaceView extends WatchUi.WatchFace {
     }
 
     function getWeatherTime(weather) {
-        if (weather instanceof Toybox.Weather.CurrentConditions) {
+        if (Toybox has :Weather && weather instanceof Toybox.Weather.CurrentConditions) {
             return weather.observationTime;
-        } else if (weather instanceof Toybox.Weather.HourlyForecast) {
+        } else if (Toybox has :Weather && weather instanceof Toybox.Weather.HourlyForecast) {
             return weather.forecastTime;
         } else {
             return weather["forecastTime"];
@@ -571,7 +567,7 @@ class IgafaceView extends WatchUi.WatchFace {
     }
 
     function getPrecipitationInfo(weather) {
-        if (weather instanceof Toybox.Weather.CurrentConditions || weather instanceof Toybox.Weather.HourlyForecast) {
+        if (Toybox has :Weather && (weather instanceof Toybox.Weather.CurrentConditions || weather instanceof Toybox.Weather.HourlyForecast)) {
             return Lang.format("$1$%", [weather.precipitationChance]);
         } else {
             return Lang.format("$1$mm", [weather["precipitation"]]);
@@ -579,9 +575,9 @@ class IgafaceView extends WatchUi.WatchFace {
     }
 
     function getWeatherWindSpeed(weather) {
-        if (weather instanceof Toybox.Weather.CurrentConditions) {
+        if (Toybox has :Weather && weather instanceof Toybox.Weather.CurrentConditions) {
             return weather.windSpeed;
-        } else if (weather instanceof Toybox.Weather.HourlyForecast) {
+        } else if (Toybox has :Weather && weather instanceof Toybox.Weather.HourlyForecast) {
             return weather.windSpeed;
         } else {
             return weather["windSpeed"];
@@ -589,9 +585,9 @@ class IgafaceView extends WatchUi.WatchFace {
     }
 
     function getWeatherTemperature(weather) {
-        if (weather instanceof Toybox.Weather.CurrentConditions) {
+        if (Toybox has :Weather && weather instanceof Toybox.Weather.CurrentConditions) {
             return weather.temperature;
-        } else if (weather instanceof Toybox.Weather.HourlyForecast) {
+        } else if (Toybox has :Weather && weather instanceof Toybox.Weather.HourlyForecast) {
             return weather.temperature;
         } else {
             return weather["temperature"];
@@ -599,7 +595,7 @@ class IgafaceView extends WatchUi.WatchFace {
     }
 
     function getWeatherCondition(weather) as Number or Null {
-        if (weather instanceof Toybox.Weather.CurrentConditions || weather instanceof Toybox.Weather.HourlyForecast) {
+        if (Toybox has :Weather && (weather instanceof Toybox.Weather.CurrentConditions || weather instanceof Toybox.Weather.HourlyForecast)) {
             return weather.condition;
         } else {
             return weather["weatherCode"].toNumber();
@@ -609,7 +605,7 @@ class IgafaceView extends WatchUi.WatchFace {
     function isObservationPosAvailable(weatherConditions) {
         if (weatherConditions == null) {
             return false;
-        } else if (weatherConditions instanceof Toybox.Weather.CurrentConditions) {
+        } else if (Toybox has :Weather && weatherConditions instanceof Toybox.Weather.CurrentConditions) {
             return weatherConditions.observationLocationPosition != null;
         } else {
             return weatherConditions["isDay"] != null;
@@ -709,30 +705,25 @@ class IgafaceView extends WatchUi.WatchFace {
 
     function triggerExternalWeather(now) {
         var needToregister = false;
+        var lastExternalWeatherTime = Background.getLastTemporalEventTime();
         if (Toybox.System has :ServiceDelegate) {
             if (lastExternalWeatherTime != null) {
                 if (now.compare(lastExternalWeatherTime) > 0) {
                     if (externalWeather != null) {
                         if ((isPositionChanged() && now.compare(lastExternalWeatherTime) > 5 * 60) || now.compare(lastExternalWeatherTime) > 60 * 60) {
-                            lastExternalWeatherTime = now;
                             needToregister = true;
                         }
                     } else {
                         if (now.compare(lastExternalWeatherTime) > 5 * 60) {
-                            lastExternalWeatherTime = now;
-                        } else {
-                            lastExternalWeatherTime = lastExternalWeatherTime.add(FIVE_MINUTES);
-                        }
-                        needToregister = true;
+                            needToregister = true;
+                        } 
                     }
                 }
             } else {
                 needToregister = true;
-                lastExternalWeatherTime = now;
             }
             if (needToregister) {
-                Storage.setValue("igawf_last_external_weather_time", lastExternalWeatherTime.value());
-                Background.registerForTemporalEvent(lastExternalWeatherTime);
+                Background.registerForTemporalEvent(now);
             }
         }
     }
