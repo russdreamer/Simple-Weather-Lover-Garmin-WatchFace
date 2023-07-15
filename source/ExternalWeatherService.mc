@@ -120,7 +120,7 @@ class ExternalWeatherService extends Toybox.System.ServiceDelegate {
                     "time" => hourly.get("time")[i],
                     "windSpeed" => (hourly.get("windspeed_10m")[i] * 1000 / 3600).toNumber(),
                     "weatherCode" => hourly.get("weathercode")[i],
-                    "temperature" => hourly.get("temperature_2m")[i].toNumber(),
+                    "temperature" => Toybox.Math.round(hourly.get("temperature_2m")[i].toFloat()).toNumber(),
                     "precipitation" => hourly.get("precipitation")[i].toFloat().format("%.1f"),
                     "isDay" => hourly.get("is_day")[i].equals(1),
                 });
