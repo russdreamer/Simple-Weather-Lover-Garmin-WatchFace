@@ -778,7 +778,7 @@ class IgafaceView extends WatchUi.WatchFace {
                 needToRegister = true;
             }
 
-            if (needToRegister) {
+            if (needToRegister && locator.getNewLocation() != null) {
                 printLog("Background.registerForTemporalEvent method");
                 Background.registerForTemporalEvent(now);
             }
