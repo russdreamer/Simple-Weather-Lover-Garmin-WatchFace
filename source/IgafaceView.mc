@@ -28,7 +28,8 @@ class IgafaceView extends WatchUi.WatchFace {
     var lastWeatherChangeSeconds;
     var nextForecastIndex;
     var iconSize;
-    var previousUpdateTime;
+    var externalCityUpdateTime;
+    var previousScreenUpdateTime;
     var previousExtWeatherTriggerAttempt;
     var weatherPreviousUpdateTime;
     var internalWeatherConditions as Toybox.Weather.CurrentConditions or Null;
@@ -118,7 +119,8 @@ class IgafaceView extends WatchUi.WatchFace {
         isStepsVisible = false;
         lastWeatherChangeSeconds = 0;
         nextForecastIndex = -1;
-        previousUpdateTime = null;
+        externalCityUpdateTime = null;
+        previousScreenUpdateTime = null;
         previousExtWeatherTriggerAttempt = null;
         weatherPreviousUpdateTime = null;
         internalWeatherConditions = null;
@@ -147,11 +149,11 @@ class IgafaceView extends WatchUi.WatchFace {
     function onUpdate(dc as Dc) as Void {
         var now = Time.now();
 
-        var needScreenUpdate = previousUpdateTime == null || now.compare(previousUpdateTime) != 0 || isSleepMode;
+        var needScreenUpdate = previousScreenUpdateTime == null || now.compare(previousScreenUpdateTime) != 0 || isSleepMode;
         if (!needScreenUpdate) {
             return;
         }
-        previousUpdateTime = now;
+        previousScreenUpdateTime = now;
 
         var currentTime = Gregorian.info(now, Time.FORMAT_SHORT);
         accentColor = Application.Properties.getValue("AccentColor");
@@ -182,7 +184,7 @@ class IgafaceView extends WatchUi.WatchFace {
                     isExternalWeatherUpdated = false;
                     externalHourlyForecast = getExternalWeatherForecast();
                 }
-                if (externalHourlyForecast == null || externalHourlyForecast.size() < 2) {
+                if (externalHourlyForecast == null) {
                     internalHourlyForecast = getInternalWeatherForecast(now);
                     cachedHourlyForecast = internalHourlyForecast;
                 } else {
@@ -331,6 +333,7 @@ class IgafaceView extends WatchUi.WatchFace {
         printLog("onExternalCityUpdated method");
         if (data != null && data instanceof String) {
             externalCity = getFormatedExternalCityName(data);
+            externalCityUpdateTime = Time.now();
         }
     }
 
@@ -484,8 +487,8 @@ class IgafaceView extends WatchUi.WatchFace {
         var locationName = null;
         var isInternalSource = (currentSource == INTERNAL_CONDITION || currentSource == INTERNAL_HOURLY) && isWeatherConditionAvailable(internalWeatherConditions);
         if (isInternalSource) {
-            if (externalCity != null && externalCity != "" && locator.getNewLocation()) {
-                //-
+            var isExternalCityActual = externalCityUpdateTime != null && externalCityUpdateTime.compare(internalWeatherConditions.observationTime) >= 0;
+            if (isExternalCityActual && externalCity != null && externalCity != "") {
                 return externalCity;
             }
             locationName = internalWeatherConditions.observationLocationName;
@@ -711,7 +714,7 @@ class IgafaceView extends WatchUi.WatchFace {
         }
     }
     function getCurrentExternalWeather(currentTime) {
-        if (externalHourlyForecast != null) {
+        if (externalHourlyForecast != null && externalHourlyForecast.size() > 1) {
             if (currentTime.min < 30) {
                 return externalHourlyForecast[0];
             } else {
@@ -733,7 +736,7 @@ class IgafaceView extends WatchUi.WatchFace {
     function getExternalWeatherForecast() {
         if (externalWeather != null) {
             var trimmedWeather = getTrimmedExtWeather(externalWeather);
-            return trimmedWeather != null && trimmedWeather.size() > 0 ? trimmedWeather : null;
+            return trimmedWeather != null && trimmedWeather.size() > 1 ? trimmedWeather : null;
         } else {
             return null;
         }
