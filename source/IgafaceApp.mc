@@ -7,6 +7,7 @@ class IgafaceApp extends Application.AppBase {
     var inBackground = false;
 
     function initialize() {
+        clearAppStorage();
         AppBase.initialize();
     }
 
@@ -39,17 +40,29 @@ class IgafaceApp extends Application.AppBase {
     }
 
     function onBackgroundData(data) {
-        System.println("data received: " + data);
     }
 
     function  onStorageChanged() {
-        System.println("onStorageChanged called");
         if (watchFace != null) {
+            watchFace.printLog("Background.registerForTemporalEvent method");
             var weatherData = Toybox.Application.Storage.getValue("weatherData");
             if (weatherData != null) {
-                watchFace.onBackgroundData(weatherData);
+                Toybox.Application.Storage.deleteValue("weatherData");
+                watchFace.onExternalWeatherUpdated(weatherData);
+            } else {
+                var cityData = Toybox.Application.Storage.getValue("cityData");
+                if (cityData != null) {
+                    Toybox.Application.Storage.deleteValue("cityData");
+                    watchFace.onExternalCityUpdated(cityData);
+                }
             }
         }
+    }
+
+    function clearAppStorage() {
+        Toybox.Application.Storage.deleteValue("cityData");
+        Toybox.Application.Storage.deleteValue("weatherData");
+        Toybox.Application.Storage.deleteValue("externalWeatherService_lastSeenLocationGeoString");
     }
 }
 

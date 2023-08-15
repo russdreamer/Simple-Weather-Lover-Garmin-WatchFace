@@ -1,82 +1,40 @@
 import Toybox.Lang;
-import Toybox.Time.Gregorian;
+import Toybox.Time;
 import Toybox.Application.Storage;
 
 (:background)
 class ExternalWeatherService extends Toybox.System.ServiceDelegate {
-    var lastSeenLocation = null;
-    var lastSeenLocationGeoString = null;
+    var locator;
+    var newLocationGeoString = null;
+    var locationDegrees = null;
 
     (:background_method)
     function initialize() {
-        lastSeenLocation = Storage.getValue("lastSeenLocation");
-        lastSeenLocationGeoString = Storage.getValue("lastSeenLocationGeoString");
+        locator = new Locator();
         ServiceDelegate.initialize();
     }
 
     (:background_method)
     function onTemporalEvent() {
-        //if (isPositionChanged()) {
-            // get new city name;
-        //}
+       // read from Storage.getValue previous location
+       // if it's new one - get new city name, remove from storage current one and set new one
+       // if it's the same - leave the same location in storage
         
-        var newLocation = getNewLocation();
+        var newLocation = locator.getNewLocation();
+        newLocationGeoString = locator.locationToGeoString(newLocation);
 
         if (newLocation != null) {
-            var degrees = newLocation.toDegrees() as Array<Double>;
-            getExternalWeather(degrees[0], degrees[1]);
+            locationDegrees = newLocation.toDegrees() as Array<Double>;
+            getExternalWeather();
         }
     }
 
     (:background_method)
-    function isPositionChanged() as Boolean {
-        var newLocation = getNewLocation();
-        if (newLocation != null) {
-            var newLocationGeoString = newLocation.toGeoString(Position.GEO_DEG);
-            if (!newLocationGeoString.equals(lastSeenLocationGeoString)) {
-                Storage.setValue("lastSeenLocation", newLocation); // not possible to serialize
-                Storage.setValue("lastSeenLocationGeoString", newLocationGeoString);
-                return true;
-            }
-        }
-        return false;
-    }
-
-    (:background_method)
-    function isIncorrectLocation(location) {
-        if (location == null) {
-            return true;
-        }
-
-        var degrees = location.toDegrees();
-        return degrees[0] > 90 || degrees[0] < -90 || degrees[1] > 180 || degrees[1] < -180;
-    }
-
-    (:background_method)
-    function getNewLocation() {
-        var location = Activity.getActivityInfo().currentLocation;
-        System.println("location from  Activity.getActivityInfo().currentLocation");
-        if (isIncorrectLocation(location)) {
-            location = Toybox.Position.getInfo().position;
-            System.println("location from  Position.getInfo().position");
-            if (Toybox has :Weather && isIncorrectLocation(location)) {
-                System.println("all above were null");
-                var weatherConditions = Weather.getCurrentConditions();
-                if (weatherConditions != null) {
-                    System.println("location from Weather.getCurrentConditions().observationLocationPosition");
-                    location = weatherConditions.observationLocationPosition;
-                }
-            }
-        }
-        return isIncorrectLocation(location) ? null : location;
-    }
-
-    (:background_method)
-    function getExternalWeather(latitude as Double, longitude as Double) {
+    function getExternalWeather() {
         var url = "https://api.open-meteo.com/v1/forecast";
         var params = {
-            "latitude" => latitude,
-            "longitude" => longitude,
+            "latitude" => locationDegrees[0],
+            "longitude" => locationDegrees[1],
             "forecast_days" => 2,
             "hourly" => "temperature_2m,windspeed_10m,precipitation,weathercode,is_day"
         };
@@ -85,21 +43,58 @@ class ExternalWeatherService extends Toybox.System.ServiceDelegate {
             :headers => {"Content-Type" => Communications.REQUEST_CONTENT_TYPE_URL_ENCODED},
             :responseType => Communications.HTTP_RESPONSE_CONTENT_TYPE_JSON,
         };
-        Toybox.Communications.makeWebRequest(url, params, options, method(:responseCallback));
+        Toybox.Communications.makeWebRequest(url, params, options, method(:weatherResponseCallback));
     }
 
     (:background_method)
-    function responseCallback(responseCode as Number, data as String or Dictionary or Null) as Void {
+    function weatherResponseCallback(responseCode as Number, data as String or Dictionary or Null) as Void {
         if (responseCode == 200) {
-            System.println("Got success response");
             var forecast = getActualForecast(data) as Array<Dictionary>;
-            System.println("Response processed");
             Storage.setValue("weatherData", forecast);
-            Toybox.Background.exit("");
+
+            var previousSeenExternalLocation = Storage.getValue("externalWeatherService_lastSeenLocationGeoString");
+            if (!newLocationGeoString.equals(previousSeenExternalLocation)) {
+                getExternalCityName();
+            }
         } else {
-            System.println("Bad Response: " + responseCode + " : " + data);
             Toybox.Background.exit(null);
         }
+    }
+
+    (:background_method)
+    function getExternalCityName() {
+        var url = "https://nominatim.openstreetmap.org/reverse";
+        var params = {
+            "lat" => locationDegrees[0],
+            "lon" => locationDegrees[1],
+            "zoom" => "10",
+            "format" => "jsonv2"
+        };
+        var options = {
+            :method => Communications.HTTP_REQUEST_METHOD_GET,
+            :headers => {"Content-Type" => Communications.REQUEST_CONTENT_TYPE_URL_ENCODED, "accept-language" => "en-US,en;q=0.9",},
+            :responseType => Communications.HTTP_RESPONSE_CONTENT_TYPE_JSON,
+        };
+        Toybox.Communications.makeWebRequest(url, params, options, method(:cityResponseCallback));
+    }
+
+    (:background_method)
+    function cityResponseCallback(responseCode as Number, data as String or Dictionary or Null) as Void {
+        if (responseCode == 200) {
+            var cityName = parseCityName(data);
+            Storage.setValue("externalWeatherService_lastSeenLocationGeoString", newLocationGeoString);
+            Storage.setValue("cityData", cityName);
+            Toybox.Background.exit("");
+        } else {
+            Storage.setValue("cityData", "");
+            Toybox.Background.exit(null);
+        }
+    }
+
+    function parseCityName(data as Dictionary) {
+        var address = data.get("address") as Dictionary;
+        var addressType = data.get("addresstype") as String;
+        return address.get(addressType);
     }
 
     (:background_method)
@@ -131,17 +126,6 @@ class ExternalWeatherService extends Toybox.System.ServiceDelegate {
 
     (:background_method)
     function getCurrentTimeString() as String {
-        var now = Time.now();
-        return getCurrentUTCTimeString(now);
-    }
-
-    (:background_method)
-    function getCurrentUTCTimeString(now) as String {
-        var newTime = now.subtract(new Time.Duration(System.getClockTime().timeZoneOffset));
-        var currentTime = Gregorian.info(newTime, Time.FORMAT_SHORT);
-        var month = currentTime.month.format("%02d");
-        var day = currentTime.day.format("%02d");
-        var hour = currentTime.hour.format("%02d");
-        return Lang.format("$1$-$2$-$3$T$4$:00", [currentTime.year, month, day, hour]);
+        return TimeUtil.getCurrentUTCTimeString();
     }
 }
