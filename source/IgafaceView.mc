@@ -202,17 +202,17 @@ class IgafaceView extends WatchUi.WatchFace {
                 printLog("inside needWeatherUpdate block");
                 weatherPreviousUpdateTime = now;
                 if (isInternalWeaherAvailable || isExternalWeaherAvailable) {
-                    var isCurrentInternalWeatherAvailable = isCurrentInternalWeatherAvailable(internalWeatherConditions, now);
-                    var isObservationPosAvailable = isObservationPosAvailable(internalWeatherConditions);
+                    var isCurrentInternalWeatherAvailable = isInternalWeaherAvailable && isCurrentInternalWeatherAvailable(internalWeatherConditions, now);
+                    var isObservationPosAvailable = isInternalWeaherAvailable && isObservationPosAvailable(internalWeatherConditions);
                     
                     isShiftingWeatherAvailable = isExternalWeaherAvailable || (isObservationPosAvailable && internalHourlyForecast != null);
                     isStaticWeatherAvailable = isShiftingWeatherAvailable || isCurrentInternalWeatherAvailable;
 
-                    if (isStaticWeatherAvailable || isShiftingWeatherAvailable) {
-                        if (!isShiftingWeatherAvailable)  {
-                            currentWeatherSource = INTERNAL_CONDITION;
-                        } else if (internalWeatherConditions != null) {
-                            currentExternalWeather = getCurrentExternalWeather(currentTime);
+                    if (!isShiftingWeatherAvailable)  {
+                        currentWeatherSource = INTERNAL_CONDITION;
+                    } else {
+                        currentExternalWeather = getCurrentExternalWeather(currentTime);
+                        if (internalWeatherConditions != null) {
                             var hourlyTime = isExternalWeaherAvailable ? getWeatherTime(currentExternalWeather) : getWeatherTime(internalHourlyForecast[0]);
                             if (now.compare(hourlyTime).abs() <= now.compare(getWeatherTime(internalWeatherConditions)).abs()) {
                                 currentWeatherSource = isExternalWeaherAvailable ? EXTERNAL : INTERNAL_HOURLY;
@@ -222,11 +222,11 @@ class IgafaceView extends WatchUi.WatchFace {
                         } else {
                             currentWeatherSource = isExternalWeaherAvailable ? EXTERNAL : INTERNAL_HOURLY;
                         }
-                    } else {
-                        currentWeatherSource = NONE;
                     }
                 } else {
                     currentWeatherSource = NONE;
+                    isShiftingWeatherAvailable = false;
+                    isStaticWeatherAvailable = false;
                 }
             }
 

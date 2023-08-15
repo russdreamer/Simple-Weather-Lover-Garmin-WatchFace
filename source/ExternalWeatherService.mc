@@ -21,6 +21,10 @@ class ExternalWeatherService extends Toybox.System.ServiceDelegate {
        // if it's the same - leave the same location in storage
         
         var newLocation = locator.getNewLocation();
+        if (newLocation == null)  {
+            Toybox.Background.exit(null);
+            return;
+        }
         newLocationGeoString = locator.locationToGeoString(newLocation);
 
         if (newLocation != null) {
