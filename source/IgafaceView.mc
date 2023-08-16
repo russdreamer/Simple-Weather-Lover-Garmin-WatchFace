@@ -199,7 +199,6 @@ class IgafaceView extends WatchUi.WatchFace {
 
             // update once per minute if the weather is available
             if (needWeatherUpdate) {
-                printLog("inside needWeatherUpdate block");
                 weatherPreviousUpdateTime = now;
                 if (isInternalWeaherAvailable || isExternalWeaherAvailable) {
                     var isCurrentInternalWeatherAvailable = isInternalWeaherAvailable && isCurrentInternalWeatherAvailable(internalWeatherConditions, now);
@@ -332,7 +331,7 @@ class IgafaceView extends WatchUi.WatchFace {
     function onExternalCityUpdated(data) {
         printLog("onExternalCityUpdated method");
         if (data != null && data instanceof String) {
-            externalCity = getFormatedExternalCityName(data);
+            externalCity = data;
             externalCityUpdateTime = Time.now();
         }
     }
@@ -489,18 +488,19 @@ class IgafaceView extends WatchUi.WatchFace {
         if (isInternalSource) {
             var isExternalCityActual = externalCityUpdateTime != null && externalCityUpdateTime.compare(internalWeatherConditions.observationTime) >= 0;
             if (isExternalCityActual && externalCity != null && externalCity != "") {
-                return externalCity;
+                locationName = getFormatedExternalCityName(externalCity);
+            } else {
+                locationName = getFormatedCityName(internalWeatherConditions.observationLocationName);
             }
-            locationName = internalWeatherConditions.observationLocationName;
+
         } else if (currentSource == EXTERNAL) {
-            return externalCity != "" ? externalCity : null;
+            locationName = externalCity != null && externalCity != "" ? getFormatedExternalCityName(externalCity) : null;
         }
 
-        var cityName = getFormatedCityName(locationName);
-        if (cityName != null) {
-            cachedCityName = cityName;
+        if (locationName != null) {
+            cachedCityName = locationName;
         }
-        return cityName;
+        return locationName;
     }
 
     function getFormatedCityName(locationName) {
