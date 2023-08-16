@@ -44,7 +44,6 @@ class IgafaceApp extends Application.AppBase {
 
     function  onStorageChanged() {
         if (watchFace != null) {
-            watchFace.printLog("Background.registerForTemporalEvent method");
             var weatherData = Toybox.Application.Storage.getValue("weatherData");
             if (weatherData != null) {
                 Toybox.Application.Storage.deleteValue("weatherData");

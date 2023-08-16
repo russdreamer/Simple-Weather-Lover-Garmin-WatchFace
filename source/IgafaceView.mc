@@ -321,7 +321,6 @@ class IgafaceView extends WatchUi.WatchFace {
     }
 
     function onExternalWeatherUpdated(data) {
-        printLog("onExternalWeatherUpdated method");
         if (data != null && data instanceof Array) {
             externalWeather = processBackgroundData(data);
             isExternalWeatherUpdated = true;
@@ -329,7 +328,6 @@ class IgafaceView extends WatchUi.WatchFace {
     }
 
     function onExternalCityUpdated(data) {
-        printLog("onExternalCityUpdated method");
         if (data != null && data instanceof String) {
             externalCity = data;
             externalCityUpdateTime = Time.now();
@@ -509,7 +507,6 @@ class IgafaceView extends WatchUi.WatchFace {
             if (locationName.equals(previousObservationLocationName)) {
                 cityName = cachedCityName;
             } else {
-                printLog("getFormatedCityName method non-cached case");
                 previousObservationLocationName = locationName;
                 var lengthLimit = 18;
                 var commaIndex = locationName.find(",");
@@ -532,7 +529,6 @@ class IgafaceView extends WatchUi.WatchFace {
             if (locationName.equals(previousObservationLocationName)) {
                 cityName = cachedCityName;
             } else {
-                printLog("getFormatedExternalCityName method non-cached case");
                 previousObservationLocationName = locationName;
                 var lengthLimit = 18;
                 cityName = locationName.substring(null, lengthLimit).toUpper();
@@ -543,7 +539,6 @@ class IgafaceView extends WatchUi.WatchFace {
     }
 
     function getSupportedString(stringToTransform) {
-        printLog("getSupportedString method");
         var stringToTransformArray = stringToTransform.toCharArray() as Array;
         var i = 0;
         while(i < stringToTransformArray.size()) {
@@ -743,7 +738,6 @@ class IgafaceView extends WatchUi.WatchFace {
     }
 
     function getTrimmedExtWeather(weatherArray as Array<Dictionary>) as Array or Null {
-        printLog("getTrimmedExtWeather method");
         var currentTime = TimeUtil.getCurrentUTCTimeString();
         var startIndex = null;
         for (var i = 0; i < weatherArray.size(); i++) {
@@ -779,7 +773,6 @@ class IgafaceView extends WatchUi.WatchFace {
             }
 
             if (needToRegister && locator.getNewLocation() != null) {
-                printLog("Background.registerForTemporalEvent method");
                 Background.registerForTemporalEvent(now);
             }
         }
@@ -888,9 +881,5 @@ class IgafaceView extends WatchUi.WatchFace {
         INTERNAL_CONDITION,
         INTERNAL_HOURLY,
         EXTERNAL
-    }
-
-    function printLog(text as String) {
-        System.println(TimeUtil.getCurrentTimeString() + ": " + text);
     }
 }
