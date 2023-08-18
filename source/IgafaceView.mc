@@ -13,6 +13,7 @@ class IgafaceView extends WatchUi.WatchFace {
     var screenHeight;
     var screenWidth;
     var timeFont;
+    var timeThinFont;
     var dataFont;
     var accentColor;
     var wasSleepMode;
@@ -45,7 +46,8 @@ class IgafaceView extends WatchUi.WatchFace {
     var cachedWeatherTime;
     var cachedDetailedWeatherData;
     var cachedWeatherData;
-    var cachedDetailedWeatherIcon;
+    var requiresBurnInProtection;
+    var isEvenMinuteTime;
 
     var ClearDayIcon;
     var ClearNightIcon;
@@ -62,6 +64,7 @@ class IgafaceView extends WatchUi.WatchFace {
     var MostlyCloudyNightIcon;
     var TornadoIcon;
     var UnknownPrecipitationIcon;
+    var cachedDetailedWeatherIcon;
     var stepsIcon;
 
     const SUPPORTED_SYMBOLS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-?%/:° ms";
@@ -78,6 +81,7 @@ class IgafaceView extends WatchUi.WatchFace {
     function onLayout(dc as Dc) as Void {
         screenHeight = dc.getHeight();
         screenWidth = dc.getWidth();
+        timeThinFont = WatchUi.loadResource(Rez.Fonts.time_thin_font);
         timeFont = WatchUi.loadResource(Rez.Fonts.time_font);
         dataFont = WatchUi.loadResource(Rez.Fonts.data_font);
         ClearDayIcon = WatchUi.loadResource(Rez.Drawables.ClearDayIcon);
@@ -95,6 +99,7 @@ class IgafaceView extends WatchUi.WatchFace {
         MostlyCloudyNightIcon = WatchUi.loadResource(Rez.Drawables.MostlyCloudyNightIcon);
         TornadoIcon = WatchUi.loadResource(Rez.Drawables.TornadoIcon);
         UnknownPrecipitationIcon = WatchUi.loadResource(Rez.Drawables.UnknownPrecipitationIcon);
+        cachedDetailedWeatherIcon = null;
         stepsIcon = WatchUi.loadResource(Rez.Drawables.StepsIcon);
         iconSize = WatchUi.loadResource(Rez.Strings.IconSize).toNumber();
 
@@ -126,7 +131,8 @@ class IgafaceView extends WatchUi.WatchFace {
         cachedWeatherTime = null;
         cachedDetailedWeatherData = null;
         cachedWeatherData = null;
-        cachedDetailedWeatherIcon = null;
+        isEvenMinuteTime = false;
+        requiresBurnInProtection = System.getDeviceSettings().requiresBurnInProtection;
     }
 
     // Called when this View is brought to the foreground. Restore
@@ -146,6 +152,7 @@ class IgafaceView extends WatchUi.WatchFace {
         previousScreenUpdateTime = now;
 
         var currentTime = Gregorian.info(now, Time.FORMAT_SHORT);
+        isEvenMinuteTime = currentTime.min % 2;
         accentColor = Application.Properties.getValue("AccentColor");
         var switchingForecast = Application.Properties.getValue("SwitchForecast");
         var isWeatherDefaultField = Application.Properties.getValue("LowPowerMode") == 0;
@@ -370,12 +377,23 @@ class IgafaceView extends WatchUi.WatchFace {
 
     function drawTime(dc as Dc, time as String) {
         dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(screenWidth * 0.5, screenHeight * 0.20, timeFont, time, Graphics.TEXT_JUSTIFY_CENTER);
+        var font = requiresBurnInProtection && isSleepMode ? timeThinFont : timeFont;
+
+        if (requiresBurnInProtection && isSleepMode && isEvenMinuteTime) {
+            dc.drawText(screenWidth * 0.5, screenHeight * 0.62, font, time, Graphics.TEXT_JUSTIFY_CENTER);
+        } else {
+            dc.drawText(screenWidth * 0.5, screenHeight * 0.20, font, time, Graphics.TEXT_JUSTIFY_CENTER);
+        }
     }
 
     function drawDate(dc as Dc, date as String) {
         dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(screenWidth * 0.85, screenHeight * 0.55, dataFont, date, Graphics.TEXT_JUSTIFY_RIGHT);
+
+        if (requiresBurnInProtection && isSleepMode && isEvenMinuteTime) {
+            dc.drawText(screenWidth * 0.15, screenHeight * 0.43, dataFont, date, Graphics.TEXT_JUSTIFY_LEFT);
+        } else {
+            dc.drawText(screenWidth * 0.85, screenHeight * 0.55, dataFont, date, Graphics.TEXT_JUSTIFY_RIGHT);
+        }
     }
 
     function drawSteps(dc as Dc, stepsNumber as String) {
@@ -414,13 +432,30 @@ class IgafaceView extends WatchUi.WatchFace {
 
     function drawWeatherData(dc as Dc, weatherTime as String) {
         dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(screenWidth * 0.5, screenHeight * 0.80, dataFont, weatherTime, Graphics.TEXT_JUSTIFY_RIGHT);
+
+        if (requiresBurnInProtection && isSleepMode) {
+            if (isEvenMinuteTime) {
+                dc.drawText(screenWidth * 0.5, screenHeight * 0.10, dataFont, weatherTime, Graphics.TEXT_JUSTIFY_RIGHT);
+            } else {
+                dc.drawText(screenWidth * 0.5, screenHeight * 0.90, dataFont, weatherTime, Graphics.TEXT_JUSTIFY_RIGHT);
+            }
+        } else {
+            dc.drawText(screenWidth * 0.5, screenHeight * 0.80, dataFont, weatherTime, Graphics.TEXT_JUSTIFY_RIGHT);
+        }
     }
 
     function drawWeatherIcon(dc as Dc, now as Time.Moment) {
         var weatherIcon = getCurrentWeatherIcon(currentWeatherSource, now);
         if (weatherIcon != null) {
-            dc.drawBitmap(screenWidth * 0.5 + iconSize / 8, screenHeight * 0.8 - iconSize / 4, weatherIcon);
+            if (requiresBurnInProtection && isSleepMode) {
+                if (isEvenMinuteTime) {
+                    dc.drawBitmap(screenWidth * 0.5 + iconSize / 8, screenHeight * 0.1 - iconSize / 4, weatherIcon);
+                } else {
+                    dc.drawBitmap(screenWidth * 0.5 + iconSize / 8, screenHeight * 0.9 - iconSize / 4, weatherIcon);
+                }
+            } else {
+                dc.drawBitmap(screenWidth * 0.5 + iconSize / 8, screenHeight * 0.8 - iconSize / 4, weatherIcon);
+            }
         }
     }
 
@@ -434,9 +469,16 @@ class IgafaceView extends WatchUi.WatchFace {
 
     function drawBatteryStatus(dc as Dc) {
         var batteryPercentage = System.getSystemStats().battery;
-        var cx = screenWidth / 2 - 1;
-        var cy = screenHeight / 2 - 1;
-        var lineLength = screenWidth * 0.85 - cx;
+        var cx;
+        var cy;
+        if (requiresBurnInProtection && isSleepMode && isEvenMinuteTime) {
+            cx = screenWidth  * 0.15;
+            cy = screenHeight * 0.545;
+        } else {
+            cx = screenWidth / 2 - 1;
+            cy = screenHeight / 2 - 1;
+        }
+        var lineLength = screenWidth * 0.85 - screenWidth / 2;
         var penWidth = 4;
         dc.setPenWidth(penWidth / 2);
         dc.setColor(Graphics.COLOR_LT_GRAY, Graphics.COLOR_TRANSPARENT);
@@ -621,9 +663,9 @@ class IgafaceView extends WatchUi.WatchFace {
                 var commaIndex = locationName.find(",");
                 if (commaIndex != null) {
                     if (commaIndex >= lengthLimit) {
-                        cityName = locationName.substring(null, lengthLimit).toUpper();
+                        cityName = locationName.substring(0, lengthLimit).toUpper();
                     } else {
-                        cityName = locationName.substring(null, commaIndex).toUpper();
+                        cityName = locationName.substring(0, commaIndex).toUpper();
                     }
                     cityName = getSupportedString(cityName);
                 }
@@ -640,7 +682,7 @@ class IgafaceView extends WatchUi.WatchFace {
             } else {
                 previousObservationLocationName = locationName;
                 var lengthLimit = 18;
-                cityName = locationName.substring(null, lengthLimit).toUpper();
+                cityName = locationName.substring(0, lengthLimit).toUpper();
                 cityName = getSupportedString(cityName);
             }
         }
