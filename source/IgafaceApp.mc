@@ -2,6 +2,7 @@ import Toybox.Application;
 import Toybox.Lang;
 import Toybox.WatchUi;
 
+(:background)
 class IgafaceApp extends Application.AppBase {
     var watchFace = null;
     var inBackground = false;

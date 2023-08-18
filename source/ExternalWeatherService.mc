@@ -4,9 +4,9 @@ import Toybox.Application.Storage;
 
 (:background)
 class ExternalWeatherService extends Toybox.System.ServiceDelegate {
-    var locator;
-    var newLocationGeoString = null;
-    var locationDegrees = null;
+    var locator as Locator;
+    var newLocationGeoString = null as String;
+    var locationDegrees as Array<Double> or Null = null;
 
     (:background_method)
     function initialize() {
@@ -28,7 +28,7 @@ class ExternalWeatherService extends Toybox.System.ServiceDelegate {
         newLocationGeoString = locator.locationToGeoString(newLocation);
 
         if (newLocation != null) {
-            locationDegrees = newLocation.toDegrees() as Array<Double>;
+            locationDegrees = newLocation.toDegrees();
             getExternalWeather();
         }
     }
@@ -41,7 +41,7 @@ class ExternalWeatherService extends Toybox.System.ServiceDelegate {
             "longitude" => locationDegrees[1],
             "forecast_days" => 2,
             "hourly" => "temperature_2m,windspeed_10m,precipitation,weathercode,is_day"
-        };
+        } as Dictionary<String, String or Number or Double>;
         var options = {
             :method => Communications.HTTP_REQUEST_METHOD_GET,
             :headers => {"Content-Type" => Communications.REQUEST_CONTENT_TYPE_URL_ENCODED},
@@ -104,7 +104,7 @@ class ExternalWeatherService extends Toybox.System.ServiceDelegate {
     (:background_method)
     function getActualForecast(data as String or Dictionary) as Array<Dictionary> {
         var currentTime = getCurrentTimeString();
-        var hourly = data.get("hourly") as Dictionary;
+        var hourly = data.get("hourly") as Dictionary<String, Array<String or Number>>;
         var toCollectItems = false;
         var timeArray = hourly.get("time") as Array<String>;
         var array = [] as Array<Dictionary>;
