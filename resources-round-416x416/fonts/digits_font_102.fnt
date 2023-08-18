@@ -1,0 +1,15 @@
+info face="Igath" size=102 bold=0 italic=0 charset="" unicode=1 stretchH=100 smooth=1 aa=1 padding=0,0,0,0 spacing=1,1 outline=0
+common lineHeight=102 base=92 scaleW=384 scaleH=256 pages=1 packed=0 alphaChnl=0 redChnl=0 greenChnl=0 blueChnl=0
+page id=0 file="digits_font_102_0.png"
+chars count=11
+char id=48   x=169   y=0     width=54    height=91    xoffset=6     yoffset=1     xadvance=66    page=0  chnl=15
+char id=49   x=334   y=0     width=24    height=91    xoffset=27    yoffset=1     xadvance=66    page=0  chnl=15
+char id=50   x=113   y=0     width=55    height=91    xoffset=6     yoffset=1     xadvance=66    page=0  chnl=15
+char id=51   x=55    y=93    width=53    height=91    xoffset=7     yoffset=1     xadvance=66    page=0  chnl=15
+char id=52   x=57    y=0     width=55    height=92    xoffset=6     yoffset=0     xadvance=66    page=0  chnl=15
+char id=53   x=224   y=0     width=54    height=91    xoffset=7     yoffset=1     xadvance=66    page=0  chnl=15
+char id=54   x=0     y=0     width=56    height=92    xoffset=5     yoffset=0     xadvance=66    page=0  chnl=15
+char id=55   x=109   y=93    width=53    height=91    xoffset=7     yoffset=1     xadvance=66    page=0  chnl=15
+char id=56   x=279   y=0     width=54    height=91    xoffset=7     yoffset=1     xadvance=66    page=0  chnl=15
+char id=57   x=0     y=93    width=54    height=91    xoffset=6     yoffset=1     xadvance=66    page=0  chnl=15
+char id=58   x=359   y=0     width=16    height=50    xoffset=5     yoffset=42    xadvance=25    page=0  chnl=15
