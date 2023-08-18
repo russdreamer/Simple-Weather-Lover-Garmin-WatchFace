@@ -7,16 +7,11 @@ import Toybox.WatchUi;
 import Toybox.ActivityMonitor;
 import Toybox.Weather;
 import Toybox.Background;
+import Toybox.Time;
 
 class IgafaceView extends WatchUi.WatchFace {
-    var timeLabel;
-    var dateLabel;
-    var weatherLabel;
-    var detailedWeatherLabel;
-    var weatherTimeLabel;
-    var stepsLabel;
-    var errorMessageTitleLabel;
-    var errorMessageBodyLabel;
+    var screenHeight;
+    var screenWidth;
     var timeFont;
     var dataFont;
     var accentColor;
@@ -47,6 +42,10 @@ class IgafaceView extends WatchUi.WatchFace {
     var currentWeatherSource;
     var isExternalWeatherUpdated;
     var previousHourVal;
+    var cachedWeatherTime;
+    var cachedDetailedWeatherData;
+    var cachedWeatherData;
+    var cachedDetailedWeatherIcon;
 
     var ClearDayIcon;
     var ClearNightIcon;
@@ -77,7 +76,8 @@ class IgafaceView extends WatchUi.WatchFace {
 
     // Load your resources here
     function onLayout(dc as Dc) as Void {
-        setLayout(Rez.Layouts.WatchFace(dc));
+        screenHeight = dc.getHeight();
+        screenWidth = dc.getWidth();
         timeFont = WatchUi.loadResource(Rez.Fonts.time_font);
         dataFont = WatchUi.loadResource(Rez.Fonts.data_font);
         ClearDayIcon = WatchUi.loadResource(Rez.Drawables.ClearDayIcon);
@@ -96,21 +96,7 @@ class IgafaceView extends WatchUi.WatchFace {
         TornadoIcon = WatchUi.loadResource(Rez.Drawables.TornadoIcon);
         UnknownPrecipitationIcon = WatchUi.loadResource(Rez.Drawables.UnknownPrecipitationIcon);
         stepsIcon = WatchUi.loadResource(Rez.Drawables.StepsIcon);
-        timeLabel = View.findDrawableById("TimeLabel") as Text;
-        dateLabel = View.findDrawableById("DateLabel") as Text;
-        errorMessageTitleLabel = View.findDrawableById("ErrorMessageTitleLabel") as Text;
-        errorMessageBodyLabel = View.findDrawableById("ErrorMessageBodyLabel") as Text;
-        weatherLabel = View.findDrawableById("WeatherLabel") as Text;
-        detailedWeatherLabel = View.findDrawableById("DetailedWeatherLabel") as Text;
-        weatherTimeLabel = View.findDrawableById("WeatherTimeLabel") as Text;
-        stepsLabel = View.findDrawableById("StepsLabel") as Text;
         iconSize = WatchUi.loadResource(Rez.Strings.IconSize).toNumber();
-        timeLabel.setFont(timeFont);
-        weatherLabel.setFont(dataFont);
-        weatherTimeLabel.setFont(dataFont);
-        detailedWeatherLabel.setFont(dataFont);
-        stepsLabel.setFont(dataFont);
-        dateLabel.setFont(dataFont);
 
         locator = new Locator();
         isSleepMode = false;
@@ -137,6 +123,10 @@ class IgafaceView extends WatchUi.WatchFace {
         currentWeatherSource = NONE;
         isExternalWeatherUpdated = false;
         previousHourVal = null;
+        cachedWeatherTime = null;
+        cachedDetailedWeatherData = null;
+        cachedWeatherData = null;
+        cachedDetailedWeatherIcon = null;
     }
 
     // Called when this View is brought to the foreground. Restore
@@ -159,9 +149,6 @@ class IgafaceView extends WatchUi.WatchFace {
         accentColor = Application.Properties.getValue("AccentColor");
         var switchingForecast = Application.Properties.getValue("SwitchForecast");
         var isWeatherDefaultField = Application.Properties.getValue("LowPowerMode") == 0;
-
-        timeLabel.setText(getTime(currentTime));
-        dateLabel.setText(getDateInfo(currentTime));
 
         var steps = null;
         var toShowStaticWeather = false;
@@ -235,19 +222,16 @@ class IgafaceView extends WatchUi.WatchFace {
 
         if (toShowStaticWeather) {
             if (!isStaticWeatherVisible) {
-                clearDataFields();
                 switchAllVisibilitiesOff();
             }
             isStaticWeatherVisible = true;
         } else if (toShowShiftingWeather) {
             if (!isShiftingWeatherVisible) {
-                clearDataFields();
                 switchAllVisibilitiesOff();
             }
             isShiftingWeatherVisible = true;
         } else {
             if (!isStepsVisible) {
-                clearDataFields();
                 switchAllVisibilitiesOff();
             }
             steps = getSteps();
@@ -255,6 +239,9 @@ class IgafaceView extends WatchUi.WatchFace {
                 isStepsVisible = true;
             }
         }
+
+        View.onUpdate(dc);
+        dc.setAntiAlias(true);
 
         if (isStaticWeatherVisible) { 
             setWeatherInfo(getCurrentWeatherTemperature(currentWeatherSource));
@@ -274,22 +261,18 @@ class IgafaceView extends WatchUi.WatchFace {
             }
             lastWeatherChangeSeconds = lastWeatherChangeSeconds == 1? 0 : lastWeatherChangeSeconds + 1;
         } else if (isStepsVisible) {
-            stepsLabel.setText(steps);
-        } else {
-            clearDataFields();
+            drawSteps(dc, steps);
         }
 
-        View.onUpdate(dc);
-        dc.setAntiAlias(true);
-
         if (isStaticWeatherVisible) {
-            drawWeatherIcon(currentWeatherSource, now, dc);
+            drawWeatherInfo(dc, now);
         } else if (isShiftingWeatherVisible) {
             if (nextForecastIndex == 0) {
-                drawDetailedWeatherIcon(currentWeatherSource, now, dc);
+                cachedDetailedWeatherIcon = getCurrentWeatherIcon(currentWeatherSource, now);
             } else {
-                drawDetailedForecastIcon(cachedHourlyForecast[nextForecastIndex - 1], now, dc);
+                cachedDetailedWeatherIcon = getDetailedForecastIcon(cachedHourlyForecast[nextForecastIndex - 1], now);
             }
+            drawDetailedWeatherInfo(dc);
         } else if (isStepsVisible) {
             drawStepsIcon(dc);
         }
@@ -297,6 +280,9 @@ class IgafaceView extends WatchUi.WatchFace {
         if (!isSleepMode) {
             drawSeconds(dc, currentTime);
         }
+
+        drawTime(dc, getTime(currentTime));
+        drawDate(dc, getDateInfo(currentTime));
         drawBatteryStatus(dc);
     }
 
@@ -311,13 +297,11 @@ class IgafaceView extends WatchUi.WatchFace {
         isSleepMode = false;
         nextForecastIndex = -1;
         lastWeatherChangeSeconds = 0;
-        clearDataFields();
     }
 
     // Terminate any active timers and prepare for slow updates.
     function onEnterSleep() as Void {
         isSleepMode = true;
-        clearDataFields();
     }
 
     function onExternalWeatherUpdated(data) {
@@ -345,24 +329,200 @@ class IgafaceView extends WatchUi.WatchFace {
         return isExternalWeatherUpdated;
     }
 
-    function showError(title, body) {
-        errorMessageTitleLabel.setText(title != null ? title : "");
-        errorMessageBodyLabel.setText(body != null ? body : "");
-    }
-
     function switchAllVisibilitiesOff() {
         isShiftingWeatherVisible = false;
         isStaticWeatherVisible = false;
         isStepsVisible = false;
     }
 
-    function clearDataFields() {
-        detailedWeatherLabel.setText("");
-        weatherTimeLabel.setText("");
-        weatherLabel.setText("");
-        stepsLabel.setText("");
-        errorMessageTitleLabel.setText("");
-        errorMessageBodyLabel.setText("");
+    function isDayTime(weatherCondition, forecastTime) {
+        if (weatherCondition == null || weatherCondition.observationLocationPosition == null) {
+            return null;
+        }
+        var toSunset = weatherCondition.getSunset(weatherCondition.observationLocationPosition, forecastTime).compare(forecastTime);
+        var toSunrise = weatherCondition.getSunrise(weatherCondition.observationLocationPosition, forecastTime).compare(forecastTime);
+        return toSunrise < 0 && toSunset > 0;
+    }
+
+    function isHourChanged(currentTime) {
+        var isChanged = currentTime.hour != previousHourVal;
+        previousHourVal = currentTime.hour;
+        return isChanged;
+    }
+
+    function drawSeconds(dc, currentTime) {
+        var START_ARC_DEGREE = 90;
+        var MAX_DEGREES = 360;
+        var MAX_SECONDS = 60;
+        var seconds = currentTime.sec;
+        var endDegree = (((60 - seconds) * MAX_DEGREES) / MAX_SECONDS + START_ARC_DEGREE) % MAX_DEGREES;
+        var penWidth = 4;
+        var cx = screenWidth / 2 - 1;
+        var cy = screenHeight / 2 - 1;
+        var radius = screenWidth / 2 - (penWidth - 2);
+
+        dc.setColor(accentColor, Graphics.COLOR_TRANSPARENT);
+        if (seconds > 0) {
+            dc.setPenWidth(penWidth);
+            dc.drawArc(cx, cy, radius, Graphics.ARC_CLOCKWISE, START_ARC_DEGREE, endDegree);
+        }
+    }
+
+    function drawTime(dc as Dc, time as String) {
+        dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_TRANSPARENT);
+        dc.drawText(screenWidth * 0.5, screenHeight * 0.20, timeFont, time, Graphics.TEXT_JUSTIFY_CENTER);
+    }
+
+    function drawDate(dc as Dc, date as String) {
+        dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_TRANSPARENT);
+        dc.drawText(screenWidth * 0.85, screenHeight * 0.55, dataFont, date, Graphics.TEXT_JUSTIFY_RIGHT);
+    }
+
+    function drawSteps(dc as Dc, stepsNumber as String) {
+        dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_TRANSPARENT);
+        dc.drawText(screenWidth * 0.5, screenHeight * 0.8, dataFont, stepsNumber, Graphics.TEXT_JUSTIFY_LEFT);
+    }
+
+    function drawDetailedWeatherInfo(dc as Dc) {
+        if (cachedWeatherTime != null && cachedWeatherTime != "") {
+            drawDetailedWeatherTime(dc, cachedWeatherTime);
+        }
+        if (cachedDetailedWeatherData != null && cachedDetailedWeatherData !=  "") {
+            drawDetailedWeatherData(dc, cachedDetailedWeatherData);
+        }
+        if (cachedDetailedWeatherIcon != null)  {
+            drawDetailedWeatherIcon(dc, cachedDetailedWeatherIcon);
+        }
+    }
+
+    function drawWeatherInfo(dc as Dc, now as Time.Moment) {
+        if (cachedWeatherData != null && cachedWeatherData !=  "") {
+            drawWeatherData(dc, cachedWeatherData);
+        }
+        drawWeatherIcon(dc, now);
+    }
+
+    function drawDetailedWeatherTime(dc as Dc, weatherTime as String) {
+        dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_TRANSPARENT);
+        dc.drawText(screenWidth * 0.5, screenHeight * 0.7, dataFont, weatherTime, Graphics.TEXT_JUSTIFY_CENTER);
+    }
+
+    function drawDetailedWeatherData(dc as Dc, weatherTime as String) {
+        dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_TRANSPARENT);
+        dc.drawText(screenWidth * 0.5, screenHeight * 0.78, dataFont, weatherTime, Graphics.TEXT_JUSTIFY_CENTER);
+    }
+
+    function drawWeatherData(dc as Dc, weatherTime as String) {
+        dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_TRANSPARENT);
+        dc.drawText(screenWidth * 0.5, screenHeight * 0.80, dataFont, weatherTime, Graphics.TEXT_JUSTIFY_RIGHT);
+    }
+
+    function drawWeatherIcon(dc as Dc, now as Time.Moment) {
+        var weatherIcon = getCurrentWeatherIcon(currentWeatherSource, now);
+        if (weatherIcon != null) {
+            dc.drawBitmap(screenWidth * 0.5 + iconSize / 8, screenHeight * 0.8 - iconSize / 4, weatherIcon);
+        }
+    }
+
+    function drawDetailedWeatherIcon(dc as Dc, weatherIcon as Graphics.BitmapType) {
+        dc.drawBitmap(screenWidth * 0.5 - iconSize / 2, screenHeight * 0.85, weatherIcon);
+    }
+
+    function drawStepsIcon(dc) {
+        dc.drawBitmap(screenWidth * 0.5 - iconSize, screenHeight * 0.8 - iconSize / 8, stepsIcon);
+    }
+
+    function drawBatteryStatus(dc as Dc) {
+        var batteryPercentage = System.getSystemStats().battery;
+        var cx = screenWidth / 2 - 1;
+        var cy = screenHeight / 2 - 1;
+        var lineLength = screenWidth * 0.85 - cx;
+        var penWidth = 4;
+        dc.setPenWidth(penWidth / 2);
+        dc.setColor(Graphics.COLOR_LT_GRAY, Graphics.COLOR_TRANSPARENT);
+        dc.drawLine(cx, cy + penWidth / 4, cx + lineLength, cy + penWidth / 4);
+        dc.setPenWidth(penWidth);
+        dc.setColor(accentColor, Graphics.COLOR_TRANSPARENT);
+        dc.drawLine(cx, cy, cx + lineLength * batteryPercentage / 100, cy);
+    }
+
+    function setWeatherInfo(temperature) {
+        var weatherInfo = temperature != null ? Lang.format("$1$°", [temperature]) : null;
+        if (weatherInfo != null) {
+            cachedWeatherData = weatherInfo;
+        }
+    }
+
+    function setDetailedWeatherInfo(currentSource) {
+        var locationName = getCurrentLocationName(currentSource);
+        cachedWeatherTime = locationName == null || locationName.length() == 0 ? "NOW" : locationName;
+        var forecast = null;
+        if (currentSource == INTERNAL_CONDITION) {
+            forecast = internalWeatherConditions;
+        } else if (currentSource == INTERNAL_HOURLY) {
+            forecast = internalHourlyForecast[0];
+        } else if (currentSource == EXTERNAL) {
+            forecast = currentExternalWeather;
+        } else {
+            cachedDetailedWeatherData = "NO DATA";
+            return;
+        }
+        var weatherInfo = Lang.format("$1$ $2$ $3$", [getTemperature(forecast), getWind(forecast), getPrecipitationInfo(forecast)]);
+        cachedDetailedWeatherData = weatherInfo;
+    }
+
+    function setDetailedForecastInfo(forecast) {
+        cachedWeatherTime = getTime(Gregorian.info(getWeatherTime(forecast), Time.FORMAT_SHORT));
+        var weatherInfo = Lang.format("$1$ $2$ $3$", [getTemperature(forecast), getWind(forecast), getPrecipitationInfo(forecast)]);
+        cachedDetailedWeatherData = weatherInfo;
+    }
+
+    function isCurrentInternalWeatherAvailable(internalWeatherConditions, now) {
+        return isWeatherConditionAvailable(internalWeatherConditions) && isCurrentTemperatureAvailable(internalWeatherConditions, now);
+    }
+
+    function isWeatherConditionAvailable(internalWeatherConditions) {
+        return internalWeatherConditions.condition != null;
+    }
+
+    function isObservationPosAvailable(weatherConditions) {
+        if (weatherConditions == null) {
+            return false;
+        } else if (Toybox has :Weather) {
+            return weatherConditions.observationLocationPosition != null;
+        }
+        return false;
+    }
+
+    function isCurrentTemperatureAvailable(weatherConditions, now) {
+        var isCurrentConditionExpired = weatherConditions == null  || now.compare(weatherConditions.observationTime) >= 3600 || now.compare(weatherConditions.observationTime) < -1800;
+        return !isCurrentConditionExpired && weatherConditions.temperature != null;
+    }
+
+    function triggerExternalWeather(now) {
+        if (Toybox.System has :ServiceDelegate) {
+            var needToRegister = false;
+            var lastExternalWeatherTime = Background.getLastTemporalEventTime();
+
+            if (lastExternalWeatherTime != null) {
+                var elapsedTime = now.compare(lastExternalWeatherTime);
+                if (elapsedTime > 5 * 60) {
+                    if (externalWeather != null) {
+                        if (locator.updatePositionIfChanged() || elapsedTime > 60 * 60) {
+                            needToRegister = true;
+                        }
+                    } else {
+                        needToRegister = true;
+                    }
+                }
+            } else {
+                needToRegister = true;
+            }
+
+            if (needToRegister && locator.getNewLocation() != null) {
+                Background.registerForTemporalEvent(now);
+            }
+        }
     }
 
     function getTime(currentTime) {
@@ -396,51 +556,25 @@ class IgafaceView extends WatchUi.WatchFace {
         return weatherInfo;
     }
 
-    function isDayTime(weatherCondition, forecastTime) {
-        if (weatherCondition == null || weatherCondition.observationLocationPosition == null) {
-            return null;
+    function getDetailedForecastIcon(forecast, now) as Graphics.BitmapType {
+        var weatherIcon = null;
+
+        var isInternalForecast = Toybox has :Weather && forecast instanceof Toybox.Weather.HourlyForecast;
+        if (isInternalForecast) {
+            var condition = forecast.condition;
+            var isDay = isDayTime(internalWeatherConditions, getWeatherTime(forecast));
+            if (isDay != null) {
+                weatherIcon = getWeatherIcon(condition, isDay);
+            }
+        } else {
+            var weatherCode = forecast["weatherCode"];
+            var isDay = forecast["isDay"];
+            if (weatherCode != null && isDay != null) {
+                weatherIcon = getWMOWeatherIcon(weatherCode, isDay);
+            }
         }
-        var toSunset = weatherCondition.getSunset(weatherCondition.observationLocationPosition, forecastTime).compare(forecastTime);
-        var toSunrise = weatherCondition.getSunrise(weatherCondition.observationLocationPosition, forecastTime).compare(forecastTime);
-        return toSunrise < 0 && toSunset > 0;
-    }
 
-    function isHourChanged(currentTime) {
-        var isChanged = currentTime.hour != previousHourVal;
-        previousHourVal = currentTime.hour;
-        return isChanged;
-    }
-
-    function drawSeconds(dc, currentTime) {
-        var START_ARC_DEGREE = 90;
-        var MAX_DEGREES = 360;
-        var MAX_SECONDS = 60;
-        var seconds = currentTime.sec;
-        var endDegree = (((60 - seconds) * MAX_DEGREES) / MAX_SECONDS + START_ARC_DEGREE) % MAX_DEGREES;
-        var penWidth = 4;
-        var cx = dc.getWidth() / 2 - 1;
-        var cy = dc.getHeight() / 2 - 1;
-        var radius = dc.getWidth() / 2 - (penWidth - 2);
-
-        dc.setColor(accentColor, Graphics.COLOR_TRANSPARENT);
-        if (seconds > 0) {
-            dc.setPenWidth(penWidth);
-            dc.drawArc(cx, cy, radius, Graphics.ARC_CLOCKWISE, START_ARC_DEGREE, endDegree);
-        }
-    }
-
-    function drawBatteryStatus(dc) {
-        var batteryPercentage = System.getSystemStats().battery;
-        var cx = dc.getWidth() / 2 - 1;
-        var cy = dc.getHeight() / 2 - 1;
-        var lineLength = dc.getWidth() * 0.85 - cx;
-        var penWidth = 4;
-        dc.setPenWidth(penWidth / 2);
-        dc.setColor(Graphics.COLOR_LT_GRAY, Graphics.COLOR_TRANSPARENT);
-        dc.drawLine(cx, cy + penWidth / 4, cx + lineLength, cy + penWidth / 4);
-        dc.setPenWidth(penWidth);
-        dc.setColor(accentColor, Graphics.COLOR_TRANSPARENT);
-        dc.drawLine(cx, cy, cx + lineLength * batteryPercentage / 100, cy);
+        return weatherIcon;
     }
 
     function getTemperature(hourlyForecast as Toybox.Weather.HourlyForecast or Toybox.Weather.CurrentConditions or Object) {
@@ -453,31 +587,6 @@ class IgafaceView extends WatchUi.WatchFace {
 
     function getSteps() {
         return Lang.format("$1$", [ActivityMonitor.getInfo().steps]);
-    }
-
-    function setDetailedWeatherInfo(currentSource) {
-        var locationName = getCurrentLocationName(currentSource);
-        weatherTimeLabel.setText(locationName == null || locationName.length() == 0 ? "NOW" : locationName);
-        var forecast = null;
-        if (currentSource == INTERNAL_CONDITION) {
-            forecast = internalWeatherConditions;
-        } else if (currentSource == INTERNAL_HOURLY) {
-            forecast = internalHourlyForecast[0];
-        } else if (currentSource == EXTERNAL) {
-            forecast = currentExternalWeather;
-        } else {
-            detailedWeatherLabel.setText("NO DATA");
-            return;
-        }
-        var weatherInfo = Lang.format("$1$ $2$ $3$", [getTemperature(forecast), getWind(forecast), getPrecipitationInfo(forecast)]);
-        detailedWeatherLabel.setText(weatherInfo);
-    }
-
-    function setDetailedForecastInfo(forecast) {
-        var forecastTime = getTime(Gregorian.info(getWeatherTime(forecast), Time.FORMAT_SHORT));
-        weatherTimeLabel.setText(forecastTime);
-        var weatherInfo = Lang.format("$1$ $2$ $3$", [getTemperature(forecast), getWind(forecast), getPrecipitationInfo(forecast)]);
-        detailedWeatherLabel.setText(weatherInfo);
     }
 
     function getCurrentLocationName(currentSource) {
@@ -552,14 +661,7 @@ class IgafaceView extends WatchUi.WatchFace {
         return Toybox.StringUtil.charArrayToString(stringToTransformArray);
     }
 
-    function setWeatherInfo(temperature) {
-        var weatherInfo = temperature != null ? Lang.format("$1$°", [temperature]) : null;
-        if (weatherInfo != null) {
-            weatherLabel.setText(weatherInfo);
-        }
-    }
-
-    function getCurrentWeatherIcon(currentSource, now) {
+    function getCurrentWeatherIcon(currentSource, now) as Graphics.BitmapType {
         var weatherIcon = null;
          var isInternalSource = (currentSource == INTERNAL_CONDITION || currentSource == INTERNAL_HOURLY) && isWeatherConditionAvailable(internalWeatherConditions);
         
@@ -577,47 +679,6 @@ class IgafaceView extends WatchUi.WatchFace {
             }
         }
         return weatherIcon;
-    }
-
-    function drawDetailedForecastIcon(forecast, now, dc) {
-        var weatherIcon = null;
-
-        var isInternalForecast = Toybox has :Weather && forecast instanceof Toybox.Weather.HourlyForecast;
-        if (isInternalForecast) {
-            var condition = forecast.condition;
-            var isDay = isDayTime(internalWeatherConditions, getWeatherTime(forecast));
-            if (isDay != null) {
-                weatherIcon = getWeatherIcon(condition, isDay);
-            }
-        } else {
-            var weatherCode = forecast["weatherCode"];
-            var isDay = forecast["isDay"];
-            if (weatherCode != null && isDay != null) {
-                weatherIcon = getWMOWeatherIcon(weatherCode, isDay);
-            }
-        }
-
-        if (weatherIcon != null) {
-            dc.drawBitmap(dc.getWidth() * 0.5 - iconSize / 2, dc.getHeight() * 0.85, weatherIcon);
-        }
-    }
-
-    function drawDetailedWeatherIcon(currentSource, now, dc) {
-        var weatherIcon = getCurrentWeatherIcon(currentSource, now);
-        if (weatherIcon != null) {
-            dc.drawBitmap(dc.getWidth() * 0.5 - iconSize / 2, dc.getHeight() * 0.85, weatherIcon);
-        }
-    }
-
-    function drawWeatherIcon(currentSource, now, dc) {
-        var weatherIcon = getCurrentWeatherIcon(currentSource, now);
-        if (weatherIcon != null) {
-            dc.drawBitmap(dc.getWidth() * 0.5 + iconSize / 8, dc.getHeight() * 0.8 - iconSize / 4, weatherIcon);
-        }
-    }
-
-    function drawStepsIcon(dc) {
-        dc.drawBitmap(dc.getWidth() * 0.5 - iconSize, dc.getHeight() * 0.8 - iconSize / 8, stepsIcon);
     }
 
     function getWeatherTime(weather) {
@@ -660,7 +721,6 @@ class IgafaceView extends WatchUi.WatchFace {
         }
     }
 
-
     function getWeatherTemperature(weather) {
         if (Toybox has :Weather && weather instanceof Toybox.Weather.CurrentConditions) {
             return weather.temperature;
@@ -677,28 +737,6 @@ class IgafaceView extends WatchUi.WatchFace {
         } else {
             return weather["weatherCode"].toNumber();
         }
-    }
-
-    function isCurrentInternalWeatherAvailable(internalWeatherConditions, now) {
-        return isWeatherConditionAvailable(internalWeatherConditions) && isCurrentTemperatureAvailable(internalWeatherConditions, now);
-    }
-
-    function isWeatherConditionAvailable(internalWeatherConditions) {
-        return internalWeatherConditions.condition != null;
-    }
-
-    function isObservationPosAvailable(weatherConditions) {
-        if (weatherConditions == null) {
-            return false;
-        } else if (Toybox has :Weather) {
-            return weatherConditions.observationLocationPosition != null;
-        }
-        return false;
-    }
-
-    function isCurrentTemperatureAvailable(weatherConditions, now) {
-        var isCurrentConditionExpired = weatherConditions == null  || now.compare(weatherConditions.observationTime) >= 3600 || now.compare(weatherConditions.observationTime) < -1800;
-        return !isCurrentConditionExpired && weatherConditions.temperature != null;
     }
 
     function getCurrentInternalWeather(now) {
@@ -750,32 +788,6 @@ class IgafaceView extends WatchUi.WatchFace {
             return weatherArray.slice(startIndex, null);
         }
         return null;
-    }
-
-    function triggerExternalWeather(now) {
-        if (Toybox.System has :ServiceDelegate) {
-            var needToRegister = false;
-            var lastExternalWeatherTime = Background.getLastTemporalEventTime();
-
-            if (lastExternalWeatherTime != null) {
-                var elapsedTime = now.compare(lastExternalWeatherTime);
-                if (elapsedTime > 5 * 60) {
-                    if (externalWeather != null) {
-                        if (locator.updatePositionIfChanged() || elapsedTime > 60 * 60) {
-                            needToRegister = true;
-                        }
-                    } else {
-                        needToRegister = true;
-                    }
-                }
-            } else {
-                needToRegister = true;
-            }
-
-            if (needToRegister && locator.getNewLocation() != null) {
-                Background.registerForTemporalEvent(now);
-            }
-        }
     }
 
     function getWeatherIcon(condition, isDay) {
