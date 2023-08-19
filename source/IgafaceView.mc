@@ -738,7 +738,7 @@ class IgafaceView extends WatchUi.WatchFace {
         if (Toybox has :Weather && (weather instanceof CurrentConditions || weather instanceof HourlyForecast)) {
             return Lang.format("$1$%", [weather.precipitationChance]);
         } else if (weather instanceof Dictionary) {
-            return Lang.format("$1$mm", [weather["precipitation"]]);
+            return Lang.format("$1$mm", [weather["precipitation"].format("%.1f")]);
         }
         return null;
     }
@@ -794,15 +794,24 @@ class IgafaceView extends WatchUi.WatchFace {
         }
     }
     function getCurrentExternalWeather(currentTime) as Dictionary or Null {
-        if (externalHourlyForecast != null && externalHourlyForecast.size() > 1) {
-            if (currentTime.min < 30) {
-                return externalHourlyForecast[0];
-            } else {
-                return externalHourlyForecast[1];
-            }
+        if (externalHourlyForecast != null && externalHourlyForecast.size() > 1) {    
+            return {
+                "time" => currentTime.min < 30 ? externalHourlyForecast[0]["time"] : externalHourlyForecast[1]["time"],
+                "forecastTime" => currentTime.min < 30 ? externalHourlyForecast[0]["forecastTime"] : externalHourlyForecast[1]["forecastTime"],
+                "isDay" => currentTime.min < 30 ? externalHourlyForecast[0]["isDay"] : externalHourlyForecast[1]["isDay"],
+                "weatherCode" => currentTime.min < 30 ? externalHourlyForecast[0]["weatherCode"] : externalHourlyForecast[1]["weatherCode"],
+                "temperature" => Math.round(calculateCurrentTimeExternalWeatherParam(externalHourlyForecast, "temperature",  currentTime.min)).toNumber(),
+                "precipitation" => calculateCurrentTimeExternalWeatherParam(externalHourlyForecast, "precipitation",  currentTime.min),
+                "windSpeed" => Math.round(calculateCurrentTimeExternalWeatherParam(externalHourlyForecast, "windSpeed",  currentTime.min)).toNumber()
+            };
         } else {
             return null;
         }
+    }
+
+    function calculateCurrentTimeExternalWeatherParam(weatherForecast as Array<Dictionary>, weatherParam as String, currentMins as Number) as Float{
+        var currentMinsInHours = currentMins / 60.0;
+        return weatherForecast[0][weatherParam] + currentMinsInHours * (weatherForecast[1][weatherParam] - weatherForecast[0][weatherParam]);
     }
 
     function getInternalWeatherForecast(now) {
