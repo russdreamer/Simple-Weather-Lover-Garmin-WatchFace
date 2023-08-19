@@ -545,7 +545,6 @@ class IgafaceView extends WatchUi.WatchFace {
         if (Toybox.System has :ServiceDelegate) {
             var needToRegister = false;
             var lastExternalWeatherTime = Background.getLastTemporalEventTime();
-
             if (lastExternalWeatherTime != null) {
                 var elapsedTime = now.compare(lastExternalWeatherTime);
                 if (elapsedTime > 5 * 60) {

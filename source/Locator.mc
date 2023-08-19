@@ -27,7 +27,7 @@ class Locator {
     }
 
     static function locationToGeoString(location as Position.Location) {
-        return location.toGeoString(Position.GEO_DEG);
+        return location != null ? location.toGeoString(Position.GEO_DEG) : null;
     }
 
     function isPositionChanged() as Boolean {

@@ -26,11 +26,8 @@ class ExternalWeatherService extends Toybox.System.ServiceDelegate {
             return;
         }
         newLocationGeoString = locator.locationToGeoString(newLocation);
-
-        if (newLocation != null) {
-            locationDegrees = newLocation.toDegrees();
-            getExternalWeather();
-        }
+        locationDegrees = newLocation.toDegrees();
+        getExternalWeather();
     }
 
     (:background_method)
