@@ -738,7 +738,10 @@ class IgafaceView extends WatchUi.WatchFace {
         if (Toybox has :Weather && (weather instanceof CurrentConditions || weather instanceof HourlyForecast)) {
             return Lang.format("$1$%", [weather.precipitationChance]);
         } else if (weather instanceof Dictionary) {
-            return Lang.format("$1$mm", [weather["precipitation"].format("%.1f")]);
+            var precipitation = weather["precipitation"].format("%.1f");
+            var precipLength = precipitation.length();
+            var canBeDecimal = precipitation.substring(precipLength - 1, precipLength).equals("0");
+            return Lang.format("$1$mm", [canBeDecimal ? precipitation.substring(0, precipLength - 2) : precipitation]);
         }
         return null;
     }
