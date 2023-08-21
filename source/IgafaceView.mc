@@ -69,7 +69,7 @@ class IgafaceView extends WatchUi.WatchFace {
     var cachedDetailedWeatherIcon;
     var stepsIcon;
 
-    const SUPPORTED_SYMBOLS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-?%/:° ms";
+    const SUPPORTED_SYMBOLS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-?%/.,:° ms";
     const MONTHS = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"] as Array<String>;
     const DAYS_OF_WEEK = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"] as Array<String>;
     const FIVE_MINUTES = new Time.Duration(5 * 60);
