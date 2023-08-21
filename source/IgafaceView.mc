@@ -30,7 +30,7 @@ class IgafaceView extends WatchUi.WatchFace {
     var weatherPreviousUpdateTime;
     var internalWeatherConditions as CurrentConditions or Null;
     var internalHourlyForecast as Array<HourlyForecast> or Null;
-    var externalHourlyForecast as Array or Null;
+    var externalHourlyForecast as Array<Dictionary> or Null;
     var cachedHourlyForecast as Array or Null;
     var currentExternalWeather as Dictionary or Null;
     var isStaticWeatherAvailable;
@@ -48,6 +48,8 @@ class IgafaceView extends WatchUi.WatchFace {
     var cachedWeatherData;
     var requiresBurnInProtection;
     var isEvenMinuteTime;
+    var isCityNameSupportedWithCustomFont;
+    var toShowCityName;
 
     var ClearDayIcon;
     var ClearNightIcon;
@@ -133,6 +135,8 @@ class IgafaceView extends WatchUi.WatchFace {
         cachedWeatherData = null;
         isEvenMinuteTime = false;
         requiresBurnInProtection = System.getDeviceSettings().requiresBurnInProtection;
+        isCityNameSupportedWithCustomFont = false;
+        toShowCityName = false;
     }
 
     // Called when this View is brought to the foreground. Restore
@@ -422,25 +426,26 @@ class IgafaceView extends WatchUi.WatchFace {
 
     function drawDetailedWeatherTime(dc as Dc, weatherTime as String) {
         dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(screenWidth * 0.5, screenHeight * 0.7, dataFont, weatherTime, Graphics.TEXT_JUSTIFY_CENTER);
+        var font = toShowCityName && !isCityNameSupportedWithCustomFont ? Graphics.FONT_XTINY : dataFont;
+        dc.drawText(screenWidth * 0.5, screenHeight * 0.7, font, weatherTime, Graphics.TEXT_JUSTIFY_CENTER);
     }
 
-    function drawDetailedWeatherData(dc as Dc, weatherTime as String) {
+    function drawDetailedWeatherData(dc as Dc, weatherData as String) {
         dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(screenWidth * 0.5, screenHeight * 0.78, dataFont, weatherTime, Graphics.TEXT_JUSTIFY_CENTER);
+        dc.drawText(screenWidth * 0.5, screenHeight * 0.78, dataFont, weatherData, Graphics.TEXT_JUSTIFY_CENTER);
     }
 
-    function drawWeatherData(dc as Dc, weatherTime as String) {
+    function drawWeatherData(dc as Dc, weatherData as String) {
         dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_TRANSPARENT);
 
         if (requiresBurnInProtection && isSleepMode) {
             if (isEvenMinuteTime) {
-                dc.drawText(screenWidth * 0.5, screenHeight * 0.10, dataFont, weatherTime, Graphics.TEXT_JUSTIFY_RIGHT);
+                dc.drawText(screenWidth * 0.5, screenHeight * 0.10, dataFont, weatherData, Graphics.TEXT_JUSTIFY_RIGHT);
             } else {
-                dc.drawText(screenWidth * 0.5, screenHeight * 0.90, dataFont, weatherTime, Graphics.TEXT_JUSTIFY_RIGHT);
+                dc.drawText(screenWidth * 0.5, screenHeight * 0.90, dataFont, weatherData, Graphics.TEXT_JUSTIFY_RIGHT);
             }
         } else {
-            dc.drawText(screenWidth * 0.5, screenHeight * 0.80, dataFont, weatherTime, Graphics.TEXT_JUSTIFY_RIGHT);
+            dc.drawText(screenWidth * 0.5, screenHeight * 0.80, dataFont, weatherData, Graphics.TEXT_JUSTIFY_RIGHT);
         }
     }
 
@@ -510,12 +515,14 @@ class IgafaceView extends WatchUi.WatchFace {
             return;
         }
         var weatherInfo = Lang.format("$1$ $2$ $3$", [getTemperature(forecast), getWind(forecast), getPrecipitationInfo(forecast)]);
+        toShowCityName = !cachedWeatherTime.equals("NOW");
         cachedDetailedWeatherData = weatherInfo;
     }
 
     function setDetailedForecastInfo(forecast) {
         cachedWeatherTime = getTime(Gregorian.info(getWeatherTime(forecast), Time.FORMAT_SHORT));
         var weatherInfo = Lang.format("$1$ $2$ $3$", [getTemperature(forecast), getWind(forecast), getPrecipitationInfo(forecast)]);
+        toShowCityName = false;
         cachedDetailedWeatherData = weatherInfo;
     }
 
@@ -645,9 +652,6 @@ class IgafaceView extends WatchUi.WatchFace {
             locationName = externalCity != null && externalCity != "" ? getFormatedExternalCityName(externalCity) : null;
         }
 
-        if (locationName != null) {
-            cachedCityName = locationName;
-        }
         return locationName;
     }
 
@@ -666,8 +670,9 @@ class IgafaceView extends WatchUi.WatchFace {
                     } else {
                         cityName = locationName.substring(0, commaIndex).toUpper();
                     }
-                    cityName = getSupportedString(cityName);
                 }
+                cachedCityName = cityName;
+                isCityNameSupportedWithCustomFont = isSupportedString(cityName);
             }
         }
         return cityName;
@@ -679,27 +684,28 @@ class IgafaceView extends WatchUi.WatchFace {
             if (locationName.equals(previousObservationLocationName)) {
                 cityName = cachedCityName;
             } else {
-                previousObservationLocationName = locationName;
                 var lengthLimit = 18;
                 cityName = locationName.substring(0, lengthLimit).toUpper();
-                cityName = getSupportedString(cityName);
+                previousObservationLocationName = locationName;
+                cachedCityName = cityName;
+                isCityNameSupportedWithCustomFont = isSupportedString(cityName);
             }
         }
         return cityName;
     }
 
-    function getSupportedString(stringToTransform) {
-        var stringToTransformArray = stringToTransform.toCharArray() as Array;
-        var i = 0;
-        while(i < stringToTransformArray.size()) {
-            var isSupported = SUPPORTED_SYMBOLS.find(stringToTransformArray[i].toString()) != null;
+    function isSupportedString(stringToCheck) {
+        if (stringToCheck == null) {
+            return true;
+        }
+        var stringToCheckArray = stringToCheck.toCharArray() as Array;
+        for (var i = 0; i < stringToCheckArray.size(); i++) {
+            var isSupported = SUPPORTED_SYMBOLS.find(stringToCheckArray[i].toString()) != null;
             if (!isSupported) {
-                stringToTransformArray.removeAll(stringToTransformArray[i]);
-            } else {
-                i++;
+                return false;
             }
         }
-        return Toybox.StringUtil.charArrayToString(stringToTransformArray);
+        return true;
     }
 
     function getCurrentWeatherIcon(currentSource, now) as Graphics.BitmapType {
