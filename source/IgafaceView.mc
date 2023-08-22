@@ -49,6 +49,7 @@ class IgafaceView extends WatchUi.WatchFace {
     var requiresBurnInProtection;
     var isEvenMinuteTime;
     var isCityNameSupportedWithCustomFont;
+    var isCityNameSupportedWithGarminFont;
     var toShowCityName;
 
     var ClearDayIcon;
@@ -136,6 +137,7 @@ class IgafaceView extends WatchUi.WatchFace {
         isEvenMinuteTime = false;
         requiresBurnInProtection = System.getDeviceSettings().requiresBurnInProtection;
         isCityNameSupportedWithCustomFont = false;
+        isCityNameSupportedWithGarminFont = false;
         toShowCityName = false;
     }
 
@@ -502,7 +504,7 @@ class IgafaceView extends WatchUi.WatchFace {
 
     function setDetailedWeatherInfo(currentSource) {
         var locationName = getCurrentLocationName(currentSource);
-        cachedWeatherTime = locationName == null || locationName.length() == 0 ? "NOW" : locationName;
+        cachedWeatherTime = locationName == null || locationName.length() == 0 || !isCityNameSupportedWithGarminFont ? "NOW" : locationName;
         var forecast = null;
         if (currentSource == INTERNAL_CONDITION) {
             forecast = internalWeatherConditions;
@@ -672,7 +674,8 @@ class IgafaceView extends WatchUi.WatchFace {
                     }
                 }
                 cachedCityName = cityName;
-                isCityNameSupportedWithCustomFont = isSupportedString(cityName);
+                isCityNameSupportedWithCustomFont = isSupportedWithCustomFontString(cityName);
+                isCityNameSupportedWithGarminFont = isSupportedWithGarminFontString(cityName);
             }
         }
         return cityName;
@@ -688,19 +691,35 @@ class IgafaceView extends WatchUi.WatchFace {
                 cityName = locationName.substring(0, lengthLimit).toUpper();
                 previousObservationLocationName = locationName;
                 cachedCityName = cityName;
-                isCityNameSupportedWithCustomFont = isSupportedString(cityName);
+                isCityNameSupportedWithCustomFont = isSupportedWithCustomFontString(cityName);
+                isCityNameSupportedWithGarminFont = isSupportedWithGarminFontString(cityName);
             }
         }
         return cityName;
     }
 
-    function isSupportedString(stringToCheck) {
+    function isSupportedWithCustomFontString(stringToCheck) {
         if (stringToCheck == null) {
             return true;
         }
         var stringToCheckArray = stringToCheck.toCharArray() as Array;
         for (var i = 0; i < stringToCheckArray.size(); i++) {
             var isSupported = SUPPORTED_SYMBOLS.find(stringToCheckArray[i].toString()) != null;
+            if (!isSupported) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    function isSupportedWithGarminFontString(stringToCheck) {
+        if (stringToCheck == null) {
+            return true;
+        }
+        var stringToCheckArray = stringToCheck.toCharArray() as Array;
+        for (var i = 0; i < stringToCheckArray.size(); i++) {
+            var charCode = stringToCheckArray[i].toNumber();
+            var isSupported = (charCode > 31 && charCode < 127) || (charCode > 159 && charCode < 382) || (charCode > 899 && charCode < 939) || (charCode > 1024 && charCode < 1072);
             if (!isSupported) {
                 return false;
             }
