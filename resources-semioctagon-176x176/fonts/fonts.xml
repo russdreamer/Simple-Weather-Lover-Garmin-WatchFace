@@ -1,0 +1,5 @@
+<fonts>
+    <font id="time_font" filename="time_font_44.fnt" antialias="true"/>
+    <font id="time_thin_font" filename="digits_font_44.fnt" antialias="true"/>
+    <font id="data_font" filename="data_font_10.fnt" antialias="true"/>
+</fonts>

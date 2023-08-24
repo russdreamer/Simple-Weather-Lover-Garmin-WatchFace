@@ -21,6 +21,7 @@ class IgafaceView extends WatchUi.WatchFace {
     var isShiftingWeatherVisible;
     var isStaticWeatherVisible;
     var isStepsVisible;
+    var isErrorVisible;
     var lastWeatherChangeSeconds;
     var nextForecastIndex;
     var iconSize;
@@ -111,6 +112,7 @@ class IgafaceView extends WatchUi.WatchFace {
         isShiftingWeatherVisible = false;
         isStaticWeatherVisible = false;
         isStepsVisible = false;
+        isErrorVisible = false;
         lastWeatherChangeSeconds = 0;
         nextForecastIndex = -1;
         externalCityUpdateTime = null;
@@ -243,6 +245,11 @@ class IgafaceView extends WatchUi.WatchFace {
                 switchAllVisibilitiesOff();
             }
             isShiftingWeatherVisible = true;
+        } else if (toShowWeather) {
+            if (!isErrorVisible) {
+                switchAllVisibilitiesOff();
+            }
+            isErrorVisible = true;
         } else {
             if (!isStepsVisible) {
                 switchAllVisibilitiesOff();
@@ -254,7 +261,9 @@ class IgafaceView extends WatchUi.WatchFace {
         }
 
         View.onUpdate(dc);
-        dc.setAntiAlias(true);
+        if (Dc has :setAntiAlias) {
+            dc.setAntiAlias(true);
+        }
 
         if (isStaticWeatherVisible) { 
             setWeatherInfo(getCurrentWeatherTemperature(currentWeatherSource));
@@ -275,6 +284,8 @@ class IgafaceView extends WatchUi.WatchFace {
             lastWeatherChangeSeconds = lastWeatherChangeSeconds == 1? 0 : lastWeatherChangeSeconds + 1;
         } else if (isStepsVisible) {
             drawSteps(dc, steps);
+        } else if (isErrorVisible) {
+            drawError(dc, "no weather data", "connect to garmin app");
         }
 
         if (isStaticWeatherVisible) {
@@ -346,6 +357,7 @@ class IgafaceView extends WatchUi.WatchFace {
         isShiftingWeatherVisible = false;
         isStaticWeatherVisible = false;
         isStepsVisible = false;
+        isErrorVisible = false;
     }
 
     function isDayTime(weatherCondition, forecastTime) {
@@ -405,6 +417,12 @@ class IgafaceView extends WatchUi.WatchFace {
     function drawSteps(dc as Dc, stepsNumber as String) {
         dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_TRANSPARENT);
         dc.drawText(screenWidth * 0.5, screenHeight * 0.8, dataFont, stepsNumber, Graphics.TEXT_JUSTIFY_LEFT);
+    }
+
+    function drawError(dc as Dc, tittle as String, errorBody as String) {
+        dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_TRANSPARENT);
+        dc.drawText(screenWidth * 0.5, screenHeight * 0.7, Graphics.FONT_XTINY, tittle, Graphics.TEXT_JUSTIFY_CENTER);
+        dc.drawText(screenWidth * 0.5, screenHeight * 0.78, Graphics.FONT_XTINY, errorBody, Graphics.TEXT_JUSTIFY_CENTER);
     }
 
     function drawDetailedWeatherInfo(dc as Dc) {
@@ -551,7 +569,7 @@ class IgafaceView extends WatchUi.WatchFace {
     }
 
     function triggerExternalWeather(now) {
-        if (Toybox.System has :ServiceDelegate) {
+        if (System has :ServiceDelegate && System.getDeviceSettings().connectionAvailable) {
             var needToRegister = false;
             var lastExternalWeatherTime = Background.getLastTemporalEventTime();
             if (lastExternalWeatherTime != null) {

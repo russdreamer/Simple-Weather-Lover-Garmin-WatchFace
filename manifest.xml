@@ -18,6 +18,9 @@
             <iq:product id="approachs7047mm"/>
             <iq:product id="d2airx10"/>
             <iq:product id="d2mach1"/>
+            <iq:product id="descentmk2"/>
+            <iq:product id="descentmk2s"/>
+            <iq:product id="enduro"/>
             <iq:product id="epix2"/>
             <iq:product id="epix2pro42mm"/>
             <iq:product id="epix2pro47mm"/>
@@ -44,6 +47,7 @@
             <iq:product id="fr255sm"/>
             <iq:product id="fr265"/>
             <iq:product id="fr265s"/>
+            <iq:product id="fr55"/>
             <iq:product id="fr745"/>
             <iq:product id="fr945"/>
             <iq:product id="fr945lte"/>
