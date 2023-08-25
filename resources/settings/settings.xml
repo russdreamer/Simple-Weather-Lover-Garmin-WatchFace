@@ -30,6 +30,10 @@
         </settingConfig>
     </setting>
 
+    <setting propertyKey="@Properties.ShowSecondsCircle" title="@Strings.ShowSecondsCircleTitle">
+        <settingConfig type="boolean" />
+    </setting>
+
     <setting propertyKey="@Properties.UseMilitaryFormat" title="@Strings.MilitaryFormatTitle">
         <settingConfig type="boolean" />
     </setting>

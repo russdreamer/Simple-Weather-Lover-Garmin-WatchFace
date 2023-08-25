@@ -162,11 +162,12 @@ class IgafaceView extends WatchUi.WatchFace {
         var currentTime = Gregorian.info(now, Time.FORMAT_SHORT);
         isEvenMinuteTime = currentTime.min % 2;
         accentColor = Application.Properties.getValue("AccentColor");
+        var isWeatherDefaultField = Application.Properties.getValue("LowPowerMode") == 0;
+        var toShowSeconds = Application.Properties.getValue("ShowSecondsCircle");
         var dataOnWristTurn = Application.Properties.getValue("DataOnWristTurn");
         var showStaticDetailedWeather = dataOnWristTurn == 1;
         var showSwitchindDetailedForecast = dataOnWristTurn == 2;
         var switchingForecast = showStaticDetailedWeather || showSwitchindDetailedForecast;
-        var isWeatherDefaultField = Application.Properties.getValue("LowPowerMode") == 0;
 
         var steps = null;
         var toShowStaticWeather = false;
@@ -312,7 +313,7 @@ class IgafaceView extends WatchUi.WatchFace {
             drawStepsIcon(dc);
         }
 
-        if (!isSleepMode) {
+        if (!isSleepMode && toShowSeconds) {
             drawSeconds(dc, currentTime);
         }
 
