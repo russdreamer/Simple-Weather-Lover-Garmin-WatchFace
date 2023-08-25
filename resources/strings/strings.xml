@@ -6,7 +6,7 @@
     <string id="ForegroundColorTitle">Foreground Color</string>
     <string id="MilitaryFormatTitle">Military Format for 24 Hour Time</string>
     <string id="AccentColorTitle">Collor for seconds and battery lines</string>
-    <string id="SwitchForecastTitle">Show detailed weather forecast on wrist turn</string>
+    <string id="DataOnWristTurnTitle">Data on wrist turn</string>
     <string id="LowPowerModeTitle">Default data field</string>
 
     <string id="ColorBlack">Black</string>
@@ -24,6 +24,10 @@
     <string id="ColorGreen">Green</string>
     <string id="ColorYellow">Yellow</string>
     <string id="Weather">Weather</string>
+    <string id="Steps">Steps</string>
+    <string id="ShowDefaultField">Default data field</string>
+    <string id="ShowCurrentWeather">Detailed current weather</string>
+    <string id="ShowHourlyWeather">Detailed hourly weather forecast</string>
     <string id="Steps">Steps</string>
 
     <string id="IconSize">32</string>

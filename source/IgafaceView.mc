@@ -105,7 +105,7 @@ class IgafaceView extends WatchUi.WatchFace {
         UnknownPrecipitationIcon = WatchUi.loadResource(Rez.Drawables.UnknownPrecipitationIcon);
         cachedDetailedWeatherIcon = null;
         stepsIcon = WatchUi.loadResource(Rez.Drawables.StepsIcon);
-        iconSize = WatchUi.loadResource(Rez.Strings.IconSize).toNumber();
+        iconSize = screenWidth / 8;
 
         locator = new Locator();
         isSleepMode = false;
@@ -162,7 +162,10 @@ class IgafaceView extends WatchUi.WatchFace {
         var currentTime = Gregorian.info(now, Time.FORMAT_SHORT);
         isEvenMinuteTime = currentTime.min % 2;
         accentColor = Application.Properties.getValue("AccentColor");
-        var switchingForecast = Application.Properties.getValue("SwitchForecast");
+        var dataOnWristTurn = Application.Properties.getValue("DataOnWristTurn");
+        var showStaticDetailedWeather = dataOnWristTurn == 1;
+        var showSwitchindDetailedForecast = dataOnWristTurn == 2;
+        var switchingForecast = showStaticDetailedWeather || showSwitchindDetailedForecast;
         var isWeatherDefaultField = Application.Properties.getValue("LowPowerMode") == 0;
 
         var steps = null;
@@ -267,18 +270,22 @@ class IgafaceView extends WatchUi.WatchFace {
 
         if (isStaticWeatherVisible) { 
             setWeatherInfo(getCurrentWeatherTemperature(currentWeatherSource));
-        } else if (isShiftingWeatherVisible) {            
-            if (lastWeatherChangeSeconds == 0) {
-                nextForecastIndex = nextForecastIndex == 4? 0 : nextForecastIndex + 1;
+        } else if (isShiftingWeatherVisible) {  
+            if (showStaticDetailedWeather) {
+                setDetailedWeatherInfo(currentWeatherSource);
+            } else if (showSwitchindDetailedForecast) {
+                if (lastWeatherChangeSeconds == 0) {
+                    nextForecastIndex = nextForecastIndex == 4? 0 : nextForecastIndex + 1;
 
-                if (cachedHourlyForecast.size() - 1 < nextForecastIndex) {
-                    nextForecastIndex = 0;
-                }
+                    if (cachedHourlyForecast.size() - 1 < nextForecastIndex) {
+                        nextForecastIndex = 0;
+                    }
 
-                if (nextForecastIndex == 0) {
-                    setDetailedWeatherInfo(currentWeatherSource);
-                } else {
-                    setDetailedForecastInfo(cachedHourlyForecast[nextForecastIndex - 1]);
+                    if (nextForecastIndex == 0) {
+                        setDetailedWeatherInfo(currentWeatherSource);
+                    } else {
+                        setDetailedForecastInfo(cachedHourlyForecast[nextForecastIndex - 1]);
+                    }
                 }
             }
             lastWeatherChangeSeconds = lastWeatherChangeSeconds == 1? 0 : lastWeatherChangeSeconds + 1;
@@ -291,10 +298,14 @@ class IgafaceView extends WatchUi.WatchFace {
         if (isStaticWeatherVisible) {
             drawWeatherInfo(dc, now);
         } else if (isShiftingWeatherVisible) {
-            if (nextForecastIndex == 0) {
+             if (showStaticDetailedWeather) {
                 cachedDetailedWeatherIcon = getCurrentWeatherIcon(currentWeatherSource, now);
-            } else {
-                cachedDetailedWeatherIcon = getDetailedForecastIcon(cachedHourlyForecast[nextForecastIndex - 1], now);
+            } else if (showSwitchindDetailedForecast) {
+                if (nextForecastIndex == 0) {
+                    cachedDetailedWeatherIcon = getCurrentWeatherIcon(currentWeatherSource, now);
+                } else {
+                    cachedDetailedWeatherIcon = getDetailedForecastIcon(cachedHourlyForecast[nextForecastIndex - 1], now);
+                }
             }
             drawDetailedWeatherInfo(dc);
         } else if (isStepsVisible) {

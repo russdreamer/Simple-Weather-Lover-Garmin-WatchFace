@@ -13,7 +13,6 @@
             <listEntry value="0xFFAA00">@Strings.ColorOrange</listEntry>
             <listEntry value="0xffffff">@Strings.ColorWhite</listEntry>
             <listEntry value="0xAAAAAA">@Strings.ColorGrey</listEntry>
-
         </settingConfig>
     </setting>
     <setting propertyKey="@Properties.LowPowerMode" title="@Strings.LowPowerModeTitle">
@@ -23,8 +22,12 @@
         </settingConfig>
     </setting>
 
-    <setting propertyKey="@Properties.SwitchForecast" title="@Strings.SwitchForecastTitle">
-        <settingConfig type="boolean" />
+    <setting propertyKey="@Properties.DataOnWristTurn" title="@Strings.DataOnWristTurnTitle">
+        <settingConfig type="list">
+            <listEntry value="0">@Strings.ShowDefaultField</listEntry>
+            <listEntry value="1">@Strings.ShowCurrentWeather</listEntry>
+            <listEntry value="2">@Strings.ShowHourlyWeather</listEntry>
+        </settingConfig>
     </setting>
 
     <setting propertyKey="@Properties.UseMilitaryFormat" title="@Strings.MilitaryFormatTitle">
