@@ -16,10 +16,6 @@ class ExternalWeatherService extends Toybox.System.ServiceDelegate {
 
     (:background_method)
     function onTemporalEvent() {
-       // read from Storage.getValue previous location
-       // if it's new one - get new city name, remove from storage current one and set new one
-       // if it's the same - leave the same location in storage
-        
         var newLocation = locator.getNewLocation();
         if (newLocation == null)  {
             Toybox.Background.exit(null);
@@ -56,6 +52,8 @@ class ExternalWeatherService extends Toybox.System.ServiceDelegate {
             var previousSeenExternalLocation = Storage.getValue("externalWeatherService_lastSeenLocationGeoString");
             if (!newLocationGeoString.equals(previousSeenExternalLocation)) {
                 getExternalCityName();
+            } else {
+                Toybox.Background.exit("");
             }
         } else {
             Toybox.Background.exit(null);
@@ -84,7 +82,7 @@ class ExternalWeatherService extends Toybox.System.ServiceDelegate {
         if (responseCode == 200) {
             var cityName = parseCityName(data);
             Storage.setValue("externalWeatherService_lastSeenLocationGeoString", newLocationGeoString);
-            Storage.setValue("cityData", cityName);
+            Storage.setValue("cityData", cityName != null ? cityName : "");
             Toybox.Background.exit("");
         } else {
             Storage.setValue("cityData", "");
