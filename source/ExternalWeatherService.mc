@@ -47,7 +47,11 @@ class ExternalWeatherService extends Toybox.System.ServiceDelegate {
     function weatherResponseCallback(responseCode as Number, data as String or Dictionary or Null) as Void {
         if (responseCode == 200) {
             var forecast = getActualForecast(data) as Array<Dictionary>;
-            Storage.setValue("weatherData", forecast);
+            var weatherData = {
+                "locationGeoString" => newLocationGeoString,
+                "forecast" => forecast
+            };
+            Storage.setValue("weatherData", weatherData);
 
             var previousSeenExternalLocation = Storage.getValue("externalWeatherService_lastSeenLocationGeoString");
             if (!newLocationGeoString.equals(previousSeenExternalLocation)) {

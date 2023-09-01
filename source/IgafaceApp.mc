@@ -43,7 +43,7 @@ class IgafaceApp extends Application.AppBase {
     function onBackgroundData(data) {
     }
 
-    function  onStorageChanged() {
+    function onStorageChanged() {
         if (watchFace != null) {
             var weatherData = Toybox.Application.Storage.getValue("weatherData");
             if (weatherData != null) {

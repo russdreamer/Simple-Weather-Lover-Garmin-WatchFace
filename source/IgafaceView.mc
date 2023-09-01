@@ -52,6 +52,7 @@ class IgafaceView extends WatchUi.WatchFace {
     var isCityNameSupportedWithCustomFont;
     var isCityNameSupportedWithGarminFont;
     var toShowCityName;
+    var externalForecastLocationGeoString;
 
     var ClearDayIcon;
     var ClearNightIcon;
@@ -141,6 +142,7 @@ class IgafaceView extends WatchUi.WatchFace {
         isCityNameSupportedWithCustomFont = false;
         isCityNameSupportedWithGarminFont = false;
         toShowCityName = false;
+        externalForecastLocationGeoString = null;
     }
 
     // Called when this View is brought to the foreground. Restore
@@ -332,8 +334,9 @@ class IgafaceView extends WatchUi.WatchFace {
     }
 
     function onExternalWeatherUpdated(data) {
-        if (data != null && data instanceof Array) {
-            externalWeather = processBackgroundData(data);
+        if (data != null && data instanceof Dictionary) {
+            externalWeather = processBackgroundData(data.get("forecast"));
+            externalForecastLocationGeoString = data.get("locationGeoString");
             isExternalWeatherUpdated = true;
         }
     }
@@ -579,8 +582,12 @@ class IgafaceView extends WatchUi.WatchFace {
                 var elapsedTime = now.compare(lastExternalWeatherTime);
                 if (elapsedTime > 5 * 60) {
                     if (externalWeather != null) {
-                        if (locator.updatePositionIfChanged() || elapsedTime > 60 * 60) {
-                            needToRegister = true;
+                        var newLocation = locator.getNewLocation();
+                        if (newLocation != null) {
+                            var isLocationChanged = !Locator.locationToGeoString(newLocation).equals(externalForecastLocationGeoString);
+                            if (isLocationChanged || elapsedTime > 60 * 60) {
+                                needToRegister = true;
+                            }
                         }
                     } else {
                         needToRegister = true;

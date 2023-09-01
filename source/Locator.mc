@@ -41,20 +41,6 @@ class Locator {
         return false;
     }
 
-    /** Returns true if position was change since last check */
-    function updatePositionIfChanged() as Boolean {
-        var newLocation = getNewLocation();
-        if (newLocation != null) {
-            var newLocationGeoString = Locator.locationToGeoString(newLocation);
-            if (!newLocationGeoString.equals(lastSeenLocationGeoString)) {
-                Storage.setValue("lastSeenLocationGeoString", newLocationGeoString);
-                lastSeenLocationGeoString = newLocationGeoString;
-                return true;
-            }
-        }
-        return false;
-    }
-
 
     private function isIncorrectLocation(location as Position.Location) {
         if (location == null) {
