@@ -25,7 +25,6 @@ class IgafaceView extends WatchUi.WatchFace {
     var lastWeatherChangeSeconds;
     var nextForecastIndex;
     var iconSize;
-    var externalCityUpdateTime;
     var previousScreenUpdateTime;
     var previousExtWeatherTriggerAttempt;
     var weatherPreviousUpdateTime;
@@ -116,7 +115,6 @@ class IgafaceView extends WatchUi.WatchFace {
         isErrorVisible = false;
         lastWeatherChangeSeconds = 0;
         nextForecastIndex = -1;
-        externalCityUpdateTime = null;
         previousScreenUpdateTime = null;
         previousExtWeatherTriggerAttempt = null;
         weatherPreviousUpdateTime = null;
@@ -337,14 +335,9 @@ class IgafaceView extends WatchUi.WatchFace {
         if (data != null && data instanceof Dictionary) {
             externalWeather = processBackgroundData(data.get("forecast"));
             externalForecastLocationGeoString = data.get("locationGeoString");
+            var cityName = data.get("locationName");
+            externalCity = cityName != null ? cityName : "";
             isExternalWeatherUpdated = true;
-        }
-    }
-
-    function onExternalCityUpdated(data) {
-        if (data != null && data instanceof String) {
-            externalCity = data;
-            externalCityUpdateTime = Time.now();
         }
     }
 
@@ -671,8 +664,7 @@ class IgafaceView extends WatchUi.WatchFace {
         var locationName = null;
         var isInternalSource = (currentSource == INTERNAL_CONDITION || currentSource == INTERNAL_HOURLY) && isWeatherConditionAvailable(internalWeatherConditions);
         if (isInternalSource) {
-            var isExternalCityActual = externalCityUpdateTime != null && externalCityUpdateTime.compare(internalWeatherConditions.observationTime) >= 0;
-            if (isExternalCityActual && externalCity != null && externalCity != "") {
+            if (externalCity != null && externalCity != "") {
                 locationName = getFormatedExternalCityName(externalCity);
             } else {
                 locationName = getFormatedCityName(internalWeatherConditions.observationLocationName);

@@ -7,6 +7,7 @@ class ExternalWeatherService extends Toybox.System.ServiceDelegate {
     var locator as Locator;
     var newLocationGeoString = null as String;
     var locationDegrees as Array<Double> or Null = null;
+    var weatherData as Dictionary or Null = null;
 
     (:background_method)
     function initialize() {
@@ -47,17 +48,22 @@ class ExternalWeatherService extends Toybox.System.ServiceDelegate {
     function weatherResponseCallback(responseCode as Number, data as String or Dictionary or Null) as Void {
         if (responseCode == 200) {
             var forecast = getActualForecast(data) as Array<Dictionary>;
-            var weatherData = {
+            weatherData = {
                 "locationGeoString" => newLocationGeoString,
                 "forecast" => forecast
             };
-            Storage.setValue("weatherData", weatherData);
 
             var previousSeenExternalLocation = Storage.getValue("externalWeatherService_lastSeenLocationGeoString");
             if (!newLocationGeoString.equals(previousSeenExternalLocation)) {
                 getExternalCityName();
             } else {
-                Toybox.Background.exit("");
+                var cityName = Storage.getValue("externalWeatherService_lastknownCityName");
+                if (cityName == null) {
+                    getExternalCityName();
+                } else {
+                    Storage.setValue("weatherData", weatherData);
+                    Toybox.Background.exit("");
+                }
             }
         } else {
             Toybox.Background.exit(null);
@@ -85,13 +91,16 @@ class ExternalWeatherService extends Toybox.System.ServiceDelegate {
     function cityResponseCallback(responseCode as Number, data as String or Dictionary or Null) as Void {
         if (responseCode == 200) {
             var cityName = parseCityName(data);
+            cityName = cityName != null ? cityName : "";
             Storage.setValue("externalWeatherService_lastSeenLocationGeoString", newLocationGeoString);
-            Storage.setValue("cityData", cityName != null ? cityName : "");
-            Toybox.Background.exit("");
+            Storage.setValue("externalWeatherService_lastknownCityName", cityName);
+            weatherData.put("locationName", cityName);
         } else {
-            Storage.setValue("cityData", "");
-            Toybox.Background.exit(null);
+            Storage.deleteValue("externalWeatherService_lastknownCityName");
         }
+
+        Storage.setValue("weatherData", weatherData);
+        Toybox.Background.exit("");
     }
 
     function parseCityName(data as Dictionary) {
