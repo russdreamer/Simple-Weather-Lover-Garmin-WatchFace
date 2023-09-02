@@ -8,6 +8,7 @@ import Toybox.ActivityMonitor;
 import Toybox.Weather;
 import Toybox.Background;
 import Toybox.Time;
+import Toybox.Position;
 
 class IgafaceView extends WatchUi.WatchFace {
     var screenHeight;
@@ -51,7 +52,8 @@ class IgafaceView extends WatchUi.WatchFace {
     var isCityNameSupportedWithCustomFont;
     var isCityNameSupportedWithGarminFont;
     var toShowCityName;
-    var externalForecastLocationGeoString;
+    var externalForecastLocationGeoString as String or Null;
+    var externalForecastLocation as Position.Location or Null;
 
     var ClearDayIcon;
     var ClearNightIcon;
@@ -141,6 +143,7 @@ class IgafaceView extends WatchUi.WatchFace {
         isCityNameSupportedWithGarminFont = false;
         toShowCityName = false;
         externalForecastLocationGeoString = null;
+        externalForecastLocation = null;
     }
 
     // Called when this View is brought to the foreground. Restore
@@ -334,7 +337,14 @@ class IgafaceView extends WatchUi.WatchFace {
     function onExternalWeatherUpdated(data) {
         if (data != null && data instanceof Dictionary) {
             externalWeather = processBackgroundData(data.get("forecast"));
-            externalForecastLocationGeoString = data.get("locationGeoString");
+            var locationDict = data.get("location");
+            externalForecastLocation = new Position.Location({
+                    :latitude => locationDict.get("lat"),
+                    :longitude => locationDict.get("lon"),
+                    :format => :degrees
+                }
+            );
+            externalForecastLocationGeoString = Locator.locationToGeoString(externalForecastLocation);
             var cityName = data.get("locationName");
             externalCity = cityName != null ? cityName : "";
             isExternalWeatherUpdated = true;
@@ -568,6 +578,8 @@ class IgafaceView extends WatchUi.WatchFace {
     }
 
     function triggerExternalWeather(now) {
+        var minorDistanceChangeMeters = 200;
+
         if (System has :ServiceDelegate && System.getDeviceSettings().connectionAvailable) {
             var needToRegister = false;
             var lastExternalWeatherTime = Background.getLastTemporalEventTime();
@@ -578,7 +590,11 @@ class IgafaceView extends WatchUi.WatchFace {
                         var newLocation = locator.getNewLocation();
                         if (newLocation != null) {
                             var isLocationChanged = !Locator.locationToGeoString(newLocation).equals(externalForecastLocationGeoString);
-                            if (isLocationChanged || elapsedTime > 60 * 60) {
+                            var isLocChangeSignificant = false; // by default
+                            if (isLocationChanged) {
+                                isLocChangeSignificant = Locator.calculateDistance(newLocation, externalForecastLocation) > minorDistanceChangeMeters;
+                            }
+                            if (isLocChangeSignificant || elapsedTime > 60 * 60) {
                                 needToRegister = true;
                             }
                         }

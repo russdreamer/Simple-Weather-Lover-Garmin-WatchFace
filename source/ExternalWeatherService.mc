@@ -22,7 +22,7 @@ class ExternalWeatherService extends Toybox.System.ServiceDelegate {
             Toybox.Background.exit(null);
             return;
         }
-        newLocationGeoString = locator.locationToGeoString(newLocation);
+        newLocationGeoString = Locator.locationToGeoString(newLocation);
         locationDegrees = newLocation.toDegrees();
         getExternalWeather();
     }
@@ -49,7 +49,10 @@ class ExternalWeatherService extends Toybox.System.ServiceDelegate {
         if (responseCode == 200) {
             var forecast = getActualForecast(data) as Array<Dictionary>;
             weatherData = {
-                "locationGeoString" => newLocationGeoString,
+                "location" => {
+                    "lat" => locationDegrees[0],
+                    "lon" => locationDegrees[1]
+                },
                 "forecast" => forecast
             };
 
