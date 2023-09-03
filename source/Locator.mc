@@ -80,7 +80,10 @@ class Locator {
         return location != null ? location.toGeoString(Position.GEO_DEG) : null;
     }
 
-    private function locationToDegreesString(location as Position.Location) as String {
+    private function locationToDegreesString(location as Position.Location or Null) as String or Null {
+        if (location == null) {
+            return null;
+        }
         var degrees = location.toDegrees();
         return degrees[0] + "_" + degrees[1];
     }
