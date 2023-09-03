@@ -7,43 +7,85 @@ import Toybox.Math;
 
 (:background)
 class Locator {
-    private var lastSeenLocationGeoString as String or Null;
+    private var lastSeenLocationDegreesString as String or Null;
+    private var lastSeenLatitude as Number or Null;
+    private var lastSeenLongitude as Number or Null;
 
     function initialize() {
-        lastSeenLocationGeoString = Storage.getValue("lastSeenLocationGeoString") != null ? Storage.getValue("lastSeenLocationGeoString") : Locator.locationToGeoString(getNewLocation());
+        lastSeenLocationDegreesString = Storage.getValue("locator_lastSeenLocationDegrees") != null ? Storage.getValue("locator_lastSeenLocationDegrees") : Locator.locationToDegreesString(getNewLocation());
+        if (lastSeenLocationDegreesString != null) {
+            updateCoordinates();
+        }
     }
 
     function getNewLocation() as Position.Location {
         var location = Activity.getActivityInfo().currentLocation;
         if (isIncorrectLocation(location)) {
             location = Toybox.Position.getInfo().position;
-            if (Toybox has :Weather && isIncorrectLocation(location)) {
-                var weatherConditions = Weather.getCurrentConditions();
-                if (weatherConditions != null) {
-                    location = weatherConditions.observationLocationPosition;
+            if (isIncorrectLocation(location)) {
+                var storedLocation = Storage.getValue("locator_lastSeenLocationDegrees");
+                if (storedLocation != null) {
+                    if (storedLocation.equals(lastSeenLocationDegreesString)) {
+                        location = createLocation(lastSeenLatitude, lastSeenLongitude);
+                    } else {
+                        lastSeenLocationDegreesString = storedLocation;
+                        updateCoordinates();
+                        location = createLocation(lastSeenLatitude, lastSeenLongitude);
+                    }
                 }
+                if (Toybox has :Weather && isIncorrectLocation(location)) {
+                    var weatherConditions = Weather.getCurrentConditions();
+                    if (weatherConditions != null) {
+                        location = weatherConditions.observationLocationPosition;
+                    }
+                }
+            } else {
+                saveToStorage(location);
             }
+        } else {
+            saveToStorage(location);
         }
         return isIncorrectLocation(location) ? null : location;
+    }
+
+    private function saveToStorage(location as Position.Location) {
+        Storage.setValue("locator_lastSeenLocationDegrees", locationToDegreesString(location));
+    }
+
+    private function parseCoordinates(location as String) as Dictionary {
+        var delimeterIndex = location.find("_");
+        var lat = location.substring(0, delimeterIndex).toNumber();
+        var lon = location.substring(delimeterIndex + 1, location.length()).toNumber();
+        return {
+            "latitude" => lat,
+            "longitude" => lon
+        };
+    }
+
+    private function createLocation(latitude as Number, longitude as Number) {
+        return new Position.Location({
+            :latitude => latitude,
+            :longitude => longitude,
+            :format => :degrees
+        });
+    }
+
+    private function updateCoordinates() {
+        var coords = parseCoordinates(lastSeenLocationDegreesString);
+        lastSeenLatitude = coords.get("latitude");
+        lastSeenLongitude = coords.get("longitude");
     }
 
     static function locationToGeoString(location as Position.Location) {
         return location != null ? location.toGeoString(Position.GEO_DEG) : null;
     }
 
-    function isPositionChanged() as Boolean {
-        var newLocation = getNewLocation();
-        if (newLocation != null) {
-            var newLocationGeoString = Locator.locationToGeoString(newLocation);
-            if (!newLocationGeoString.equals(lastSeenLocationGeoString)) {
-                return true;
-            }
-        }
-        return false;
+    private function locationToDegreesString(location as Position.Location) as String {
+        var degrees = location.toDegrees();
+        return degrees[0] + "_" + degrees[1];
     }
 
-
-    private function isIncorrectLocation(location as Position.Location) {
+    private function isIncorrectLocation(location as Position.Location or Null) {
         if (location == null) {
             return true;
         }
