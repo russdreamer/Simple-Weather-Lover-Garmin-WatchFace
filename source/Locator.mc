@@ -10,6 +10,7 @@ class Locator {
     private var lastSeenLocationDegreesString as String or Null;
     private var lastSeenLatitude as Number or Null;
     private var lastSeenLongitude as Number or Null;
+    private var lastSeenLocation as Position.Location or Null;
 
     function initialize() {
         lastSeenLocationDegreesString = Storage.getValue("locator_lastSeenLocationDegrees") != null ? Storage.getValue("locator_lastSeenLocationDegrees") : Locator.locationToDegreesString(getNewLocation());
@@ -26,11 +27,15 @@ class Locator {
                 var storedLocation = Storage.getValue("locator_lastSeenLocationDegrees");
                 if (storedLocation != null) {
                     if (storedLocation.equals(lastSeenLocationDegreesString)) {
-                        location = createLocation(lastSeenLatitude, lastSeenLongitude);
+                        if (lastSeenLocation == null) {
+                            lastSeenLocation = createLocation(lastSeenLatitude, lastSeenLongitude);
+                        }
+                        location = lastSeenLocation;
                     } else {
                         lastSeenLocationDegreesString = storedLocation;
                         updateCoordinates();
-                        location = createLocation(lastSeenLatitude, lastSeenLongitude);
+                        lastSeenLocation = createLocation(lastSeenLatitude, lastSeenLongitude);
+                        location = lastSeenLocation;
                     }
                 }
                 if (Toybox has :Weather && isIncorrectLocation(location)) {
@@ -54,8 +59,8 @@ class Locator {
 
     private function parseCoordinates(location as String) as Dictionary {
         var delimeterIndex = location.find("_");
-        var lat = location.substring(0, delimeterIndex).toNumber();
-        var lon = location.substring(delimeterIndex + 1, location.length()).toNumber();
+        var lat = location.substring(0, delimeterIndex).toFloat();
+        var lon = location.substring(delimeterIndex + 1, location.length()).toFloat();
         return {
             "latitude" => lat,
             "longitude" => lon
