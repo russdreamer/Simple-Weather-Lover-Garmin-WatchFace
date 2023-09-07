@@ -5,6 +5,8 @@
     <string id="BackgroundColorTitle">Background Color</string>
     <string id="ForegroundColorTitle">Foreground Color</string>
     <string id="MilitaryFormatTitle">Military Format for 24 Hour Time</string>
+    <string id="ImperialFormatTitle">Use Imperial Weather Format (°F, Miles)</string>
+    <string id="PrecipitationFormatTitle">Precipitation Format (when possible)</string>
     <string id="AccentColorTitle">Collor for seconds and battery lines</string>
     <string id="DataOnWristTurnTitle">Data on wrist turn</string>
     <string id="LowPowerModeTitle">Default data field</string>
@@ -29,6 +31,8 @@
     <string id="ShowDefaultField">Default data field</string>
     <string id="ShowCurrentWeather">Detailed current weather</string>
     <string id="ShowHourlyWeather">Detailed hourly weather forecast</string>
+    <string id="PrecipitationMilimeter">Milimeters per Hour</string>
+    <string id="PrecipitationPercentage">Precipitation Chance</string>
     <string id="Steps">Steps</string>
 
     <string id="IconSize">32</string>

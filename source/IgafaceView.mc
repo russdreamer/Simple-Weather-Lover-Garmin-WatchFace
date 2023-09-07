@@ -54,6 +54,8 @@ class IgafaceView extends WatchUi.WatchFace {
     var toShowCityName;
     var externalForecastLocationGeoString as String or Null;
     var externalForecastLocation as Position.Location or Null;
+    var precipitationInMilimeters;
+    var useImperialFormat;
 
     var ClearDayIcon;
     var ClearNightIcon;
@@ -144,6 +146,8 @@ class IgafaceView extends WatchUi.WatchFace {
         toShowCityName = false;
         externalForecastLocationGeoString = null;
         externalForecastLocation = null;
+        precipitationInMilimeters = 0;
+        useImperialFormat = false;
     }
 
     // Called when this View is brought to the foreground. Restore
@@ -168,6 +172,8 @@ class IgafaceView extends WatchUi.WatchFace {
         var isWeatherDefaultField = Application.Properties.getValue("LowPowerMode") == 0;
         var toShowSeconds = Application.Properties.getValue("ShowSecondsCircle");
         var dataOnWristTurn = Application.Properties.getValue("DataOnWristTurn");
+        useImperialFormat = Application.Properties.getValue("UseImperialFormat");
+        precipitationInMilimeters = Application.Properties.getValue("PrecipitationFormat") == 0;
         var showStaticDetailedWeather = dataOnWristTurn == 1;
         var showSwitchindDetailedForecast = dataOnWristTurn == 2;
         var switchingForecast = showStaticDetailedWeather || showSwitchindDetailedForecast;
@@ -523,7 +529,7 @@ class IgafaceView extends WatchUi.WatchFace {
     }
 
     function setWeatherInfo(temperature) {
-        var weatherInfo = temperature != null ? Lang.format("$1$°", [temperature]) : null;
+        var weatherInfo = temperature != null ? getTemperatureWithUnits(temperature) : null;
         if (weatherInfo != null) {
             cachedWeatherData = weatherInfo;
         }
@@ -635,14 +641,6 @@ class IgafaceView extends WatchUi.WatchFace {
         return Lang.format("$1$ $2$ $3$", [month, day, dayOfWeek]);
     }
 
-    function getCurrentTemperatureInfo(hourlyForecast as Array) {
-        var weatherInfo = null;
-        if (hourlyForecast != null && hourlyForecast.size != 0) {
-            weatherInfo = Lang.format("$1$°", [hourlyForecast[0].temperature]);
-        }
-        return weatherInfo;
-    }
-
     function getDetailedForecastIcon(forecast, now) as Graphics.BitmapType {
         var weatherIcon = null;
 
@@ -665,11 +663,23 @@ class IgafaceView extends WatchUi.WatchFace {
     }
 
     function getTemperature(hourlyForecast as HourlyForecast or CurrentConditions or Object) {
-        return Lang.format("$1$°", [getWeatherTemperature(hourlyForecast)]);
+        return getTemperatureWithUnits(getWeatherTemperature(hourlyForecast));
+    }
+
+    function getTemperatureWithUnits(temperature as Number) {
+        if (useImperialFormat) {
+            return Lang.format("$1$°", [((temperature * (9.0 / 5)) + 32).toNumber()]);
+        } else {
+            return Lang.format("$1$°", [temperature]);
+        }
     }
 
     function getWind(hourlyForecast as HourlyForecast or CurrentConditions) {
-        return Lang.format("$1$m/s", [getWeatherWindSpeed(hourlyForecast).format("%d")]);
+        if (useImperialFormat) {
+            return Lang.format("$1$mph", [(getWeatherWindSpeed(hourlyForecast) * 2.237).format("%d")]);
+        } else {
+            return Lang.format("$1$m/s", [getWeatherWindSpeed(hourlyForecast).format("%d")]);
+        }
     }
 
     function getSteps() {
@@ -798,10 +808,14 @@ class IgafaceView extends WatchUi.WatchFace {
         if (Toybox has :Weather && (weather instanceof CurrentConditions || weather instanceof HourlyForecast)) {
             return Lang.format("$1$%", [weather.precipitationChance]);
         } else if (weather instanceof Dictionary) {
-            var precipitation = weather["precipitation"].format("%.1f");
-            var precipLength = precipitation.length();
-            var canBeDecimal = precipitation.substring(precipLength - 1, precipLength).equals("0");
-            return Lang.format("$1$mm", [canBeDecimal ? precipitation.substring(0, precipLength - 2) : precipitation]);
+            if (precipitationInMilimeters) {
+                var precipitation = weather["precipitation"].format("%.1f");
+                var precipLength = precipitation.length();
+                var canBeDecimal = precipitation.substring(precipLength - 1, precipLength).equals("0");
+                return Lang.format("$1$mm", [canBeDecimal ? precipitation.substring(0, precipLength - 2) : precipitation]);
+            } else {
+                return Lang.format("$1$%", [weather["precipitationChance"]]);
+            }
         }
         return null;
     }
@@ -865,6 +879,7 @@ class IgafaceView extends WatchUi.WatchFace {
                 "weatherCode" => currentTime.min < 30 ? externalHourlyForecast[0]["weatherCode"] : externalHourlyForecast[1]["weatherCode"],
                 "temperature" => Math.round(calculateCurrentTimeExternalWeatherParam(externalHourlyForecast, "temperature",  currentTime.min)).toNumber(),
                 "precipitation" => calculateCurrentTimeExternalWeatherParam(externalHourlyForecast, "precipitation",  currentTime.min),
+                "precipitationChance" => calculateCurrentTimeExternalWeatherParam(externalHourlyForecast, "precipitationChance",  currentTime.min).toNumber(),
                 "windSpeed" => Math.round(calculateCurrentTimeExternalWeatherParam(externalHourlyForecast, "windSpeed",  currentTime.min)).toNumber()
             };
         } else {

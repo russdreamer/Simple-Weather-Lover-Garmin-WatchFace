@@ -34,7 +34,7 @@ class ExternalWeatherService extends Toybox.System.ServiceDelegate {
             "latitude" => locationDegrees[0],
             "longitude" => locationDegrees[1],
             "forecast_days" => 2,
-            "hourly" => "temperature_2m,windspeed_10m,precipitation,weathercode,is_day"
+            "hourly" => "temperature_2m,windspeed_10m,precipitation,weathercode,is_day,precipitation_probability"
         } as Dictionary<String, String or Number or Double>;
         var options = {
             :method => Communications.HTTP_REQUEST_METHOD_GET,
@@ -132,6 +132,7 @@ class ExternalWeatherService extends Toybox.System.ServiceDelegate {
                     "weatherCode" => hourly.get("weathercode")[i],
                     "temperature" => Toybox.Math.round(hourly.get("temperature_2m")[i].toFloat()).toNumber(),
                     "precipitation" => hourly.get("precipitation")[i].toFloat(),
+                    "precipitationChance" => hourly.get("precipitation_probability")[i].toNumber(),
                     "isDay" => hourly.get("is_day")[i].equals(1),
                 });
             }

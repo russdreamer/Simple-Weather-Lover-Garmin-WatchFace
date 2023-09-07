@@ -30,6 +30,17 @@
         </settingConfig>
     </setting>
 
+    <setting propertyKey="@Properties.UseImperialFormat" title="@Strings.ImperialFormatTitle">
+        <settingConfig type="boolean" />
+    </setting>
+
+    <setting propertyKey="@Properties.PrecipitationFormat" title="@Strings.PrecipitationFormatTitle">
+        <settingConfig type="list">
+            <listEntry value="0">@Strings.PrecipitationMilimeter</listEntry>
+            <listEntry value="2">@Strings.PrecipitationPercentage</listEntry>
+        </settingConfig>
+    </setting>
+
     <setting propertyKey="@Properties.ShowSecondsCircle" title="@Strings.ShowSecondsCircleTitle">
         <settingConfig type="boolean" />
     </setting>
