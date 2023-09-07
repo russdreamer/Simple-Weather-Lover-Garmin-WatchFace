@@ -31,7 +31,7 @@
     <string id="ShowDefaultField">Default data field</string>
     <string id="ShowCurrentWeather">Detailed current weather</string>
     <string id="ShowHourlyWeather">Detailed hourly weather forecast</string>
-    <string id="PrecipitationMilimeter">Milimeters per Hour</string>
+    <string id="PrecipitationMilimeter">Millimeters per Hour</string>
     <string id="PrecipitationPercentage">Precipitation Chance</string>
     <string id="Steps">Steps</string>
 
