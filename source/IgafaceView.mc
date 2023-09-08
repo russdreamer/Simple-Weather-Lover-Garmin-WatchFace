@@ -441,10 +441,10 @@ class IgafaceView extends WatchUi.WatchFace {
     }
 
     function drawDetailedWeatherInfo(dc as Dc) {
-        if (cachedWeatherTime != null && cachedWeatherTime != "") {
+        if (cachedWeatherTime != null && !cachedWeatherTime.equals("")) {
             drawDetailedWeatherTime(dc, cachedWeatherTime);
         }
-        if (cachedDetailedWeatherData != null && cachedDetailedWeatherData !=  "") {
+        if (cachedDetailedWeatherData != null && !cachedDetailedWeatherData.equals("")) {
             drawDetailedWeatherData(dc, cachedDetailedWeatherData);
         }
         if (cachedDetailedWeatherIcon != null)  {
@@ -453,7 +453,7 @@ class IgafaceView extends WatchUi.WatchFace {
     }
 
     function drawWeatherInfo(dc as Dc, now as Time.Moment) {
-        if (cachedWeatherData != null && cachedWeatherData !=  "") {
+        if (cachedWeatherData != null && !cachedWeatherData.equals("")) {
             drawWeatherData(dc, cachedWeatherData);
         }
         drawWeatherIcon(dc, now);
@@ -690,14 +690,14 @@ class IgafaceView extends WatchUi.WatchFace {
         var locationName = null;
         var isInternalSource = (currentSource == INTERNAL_CONDITION || currentSource == INTERNAL_HOURLY) && isWeatherConditionAvailable(internalWeatherConditions);
         if (isInternalSource) {
-            if (externalCity != null && externalCity != "") {
+            if (externalCity != null && !externalCity.equals("")) {
                 locationName = getFormatedExternalCityName(externalCity);
             } else {
                 locationName = getFormatedCityName(internalWeatherConditions.observationLocationName);
             }
 
         } else if (currentSource == EXTERNAL) {
-            locationName = externalCity != null && externalCity != "" ? getFormatedExternalCityName(externalCity) : null;
+            locationName = externalCity != null && !externalCity.equals("") ? getFormatedExternalCityName(externalCity) : null;
         }
 
         return locationName;
