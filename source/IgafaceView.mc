@@ -352,6 +352,16 @@ class IgafaceView extends WatchUi.WatchFace {
             );
             externalForecastLocationGeoString = Locator.locationToGeoString(externalForecastLocation);
             var cityName = data.get("locationName");
+            Logger.log("New weather data received");
+            if (!cityName.equals(externalCity)) {
+                if (externalCity == null) {
+                    Logger.log("externalCity is null. cityName  " + (cityName  == null || cityName.equals("") ? "is" : "isn't") + " null");
+                } else {
+                    Logger.log("cityName != externalCity. And cityName  " + (cityName  == null || cityName.equals("") ? "is" : "isn't") + " null");
+                }
+            } else {
+                Logger.log("cityName == externalCity");
+            }
             externalCity = cityName != null ? cityName : "";
             isExternalWeatherUpdated = true;
         }
@@ -441,10 +451,10 @@ class IgafaceView extends WatchUi.WatchFace {
     }
 
     function drawDetailedWeatherInfo(dc as Dc) {
-        if (cachedWeatherTime != null && cachedWeatherTime != "") {
+        if (cachedWeatherTime != null && !cachedWeatherTime.equals("")) {
             drawDetailedWeatherTime(dc, cachedWeatherTime);
         }
-        if (cachedDetailedWeatherData != null && cachedDetailedWeatherData !=  "") {
+        if (cachedDetailedWeatherData != null && !cachedDetailedWeatherData.equals("")) {
             drawDetailedWeatherData(dc, cachedDetailedWeatherData);
         }
         if (cachedDetailedWeatherIcon != null)  {
@@ -453,7 +463,7 @@ class IgafaceView extends WatchUi.WatchFace {
     }
 
     function drawWeatherInfo(dc as Dc, now as Time.Moment) {
-        if (cachedWeatherData != null && cachedWeatherData !=  "") {
+        if (cachedWeatherData != null && !cachedWeatherData.equals("")) {
             drawWeatherData(dc, cachedWeatherData);
         }
         drawWeatherIcon(dc, now);
@@ -598,6 +608,7 @@ class IgafaceView extends WatchUi.WatchFace {
                             var isLocationChanged = !Locator.locationToGeoString(newLocation).equals(externalForecastLocationGeoString);
                             var isLocChangeSignificant = false; // by default
                             if (isLocationChanged) {
+                                Logger.log("Location was changed. Distance difference is " + Locator.calculateDistance(newLocation, externalForecastLocation) + " meters");
                                 isLocChangeSignificant = Locator.calculateDistance(newLocation, externalForecastLocation) > minorDistanceChangeMeters;
                             }
                             if (isLocChangeSignificant || elapsedTime > 60 * 60) {
@@ -690,14 +701,14 @@ class IgafaceView extends WatchUi.WatchFace {
         var locationName = null;
         var isInternalSource = (currentSource == INTERNAL_CONDITION || currentSource == INTERNAL_HOURLY) && isWeatherConditionAvailable(internalWeatherConditions);
         if (isInternalSource) {
-            if (externalCity != null && externalCity != "") {
+            if (externalCity != null && !externalCity.equals("")) {
                 locationName = getFormatedExternalCityName(externalCity);
             } else {
                 locationName = getFormatedCityName(internalWeatherConditions.observationLocationName);
             }
 
         } else if (currentSource == EXTERNAL) {
-            locationName = externalCity != null && externalCity != "" ? getFormatedExternalCityName(externalCity) : null;
+            locationName = externalCity != null && !externalCity.equals("") ? getFormatedExternalCityName(externalCity) : null;
         }
 
         return locationName;

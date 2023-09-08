@@ -30,25 +30,34 @@ class Locator {
                         if (lastSeenLocation == null) {
                             lastSeenLocation = createLocation(lastSeenLatitude, lastSeenLongitude);
                         }
+                        Logger.log("Location's taken from the previous time. Stored location == last seen");
                         location = lastSeenLocation;
                     } else {
                         lastSeenLocationDegreesString = storedLocation;
                         updateCoordinates();
                         lastSeenLocation = createLocation(lastSeenLatitude, lastSeenLongitude);
                         location = lastSeenLocation;
+                        Logger.log("Location's taken from the previous time. Stored location != last seen");
                     }
                 }
                 if (Toybox has :Weather && isIncorrectLocation(location)) {
                     var weatherConditions = Weather.getCurrentConditions();
                     if (weatherConditions != null) {
+                        Logger.log("Location's taken from Toybox.Weather");
                         location = weatherConditions.observationLocationPosition;
+                    } else {
+                        Logger.log("Location isn't taken. weatherConditions is null");
                     }
+                } else {
+                    Logger.log("Location isn't taken. No Toybox.Weather module");
                 }
             } else {
                 saveToStorage(location);
+                Logger.log("Location's taken from Toybox.Position");
             }
         } else {
             saveToStorage(location);
+            Logger.log("Location's taken from Toybox.Activity");
         }
         return isIncorrectLocation(location) ? null : location;
     }
