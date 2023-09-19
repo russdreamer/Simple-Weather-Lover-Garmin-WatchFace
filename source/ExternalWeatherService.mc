@@ -80,11 +80,12 @@ class ExternalWeatherService extends Toybox.System.ServiceDelegate {
             "lat" => locationDegrees[0],
             "lon" => locationDegrees[1],
             "zoom" => "10",
-            "format" => "jsonv2"
+            "format" => "jsonv2",
+            "accept-language" => "en-US"
         };
         var options = {
             :method => Communications.HTTP_REQUEST_METHOD_GET,
-            :headers => {"Content-Type" => Communications.REQUEST_CONTENT_TYPE_URL_ENCODED, "accept-language" => "en-US,en;q=0.9",},
+            :headers => {"Content-Type" => Communications.REQUEST_CONTENT_TYPE_URL_ENCODED},
             :responseType => Communications.HTTP_RESPONSE_CONTENT_TYPE_JSON,
         };
         Toybox.Communications.makeWebRequest(url, params, options, method(:cityResponseCallback));
@@ -108,8 +109,24 @@ class ExternalWeatherService extends Toybox.System.ServiceDelegate {
 
     function parseCityName(data as Dictionary) {
         var address = data.get("address") as Dictionary;
-        var addressType = data.get("addresstype") as String;
-        return address.get(addressType);
+        var place = address.get("city");
+        if (place == null) {
+            place = address.get("town");
+        }
+        if (place == null) {
+            place = address.get("borough");
+        }
+        if (place == null) {
+            place = address.get("village");
+        }
+        if (place == null) {
+            place = address.get("suburb");
+        }
+        if (place == null) {
+            var addressType = data.get("addresstype") as String;
+            place = address.get(addressType);
+        }
+        return place;
     }
 
     (:background_method)
