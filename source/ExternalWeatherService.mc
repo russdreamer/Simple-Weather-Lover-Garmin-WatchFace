@@ -64,7 +64,7 @@ class ExternalWeatherService extends Toybox.System.ServiceDelegate {
                 if (cityName == null) {
                     getExternalCityName();
                 } else {
-                    Storage.setValue("weatherData", weatherData);
+                    Storage.setValue("externalWeatherService_weatherData", weatherData);
                     Toybox.Background.exit("");
                 }
             }
@@ -103,7 +103,7 @@ class ExternalWeatherService extends Toybox.System.ServiceDelegate {
             Storage.deleteValue("externalWeatherService_lastknownCityName");
         }
 
-        Storage.setValue("weatherData", weatherData);
+        Storage.setValue("externalWeatherService_weatherData", weatherData);
         Toybox.Background.exit("");
     }
 

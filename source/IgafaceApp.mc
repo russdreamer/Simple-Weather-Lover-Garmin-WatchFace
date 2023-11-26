@@ -45,16 +45,16 @@ class IgafaceApp extends Application.AppBase {
 
     function onStorageChanged() {
         if (watchFace != null) {
-            var weatherData = Toybox.Application.Storage.getValue("weatherData");
+            var weatherData = Toybox.Application.Storage.getValue("externalWeatherService_weatherData");
             if (weatherData != null) {
-                Toybox.Application.Storage.deleteValue("weatherData");
+                Toybox.Application.Storage.deleteValue("externalWeatherService_weatherData");
                 watchFace.onExternalWeatherUpdated(weatherData);
             }
         }
     }
 
     function clearAppStorage() {
-        Toybox.Application.Storage.deleteValue("weatherData");
+        Toybox.Application.Storage.deleteValue("externalWeatherService_weatherData");
         Toybox.Application.Storage.deleteValue("externalWeatherService_lastSeenLocationGeoString");
         Toybox.Application.Storage.deleteValue("externalWeatherService_lastknownCityName");
     }

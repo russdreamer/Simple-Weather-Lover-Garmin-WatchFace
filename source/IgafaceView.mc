@@ -148,6 +148,8 @@ class IgafaceView extends WatchUi.WatchFace {
         externalForecastLocation = null;
         precipitationInMilimeters = 0;
         useImperialFormat = false;
+
+        retrieveSavedWeather();
     }
 
     // Called when this View is brought to the foreground. Restore
@@ -340,9 +342,20 @@ class IgafaceView extends WatchUi.WatchFace {
         isSleepMode = true;
     }
 
+    function retrieveSavedWeather() {
+        var weatherData = Storage.getValue("igaface_weatherData");
+        if (weatherData != null) {
+            onExternalWeatherUpdated(weatherData);
+        }
+    }
+
     function onExternalWeatherUpdated(data) {
         if (data != null && data instanceof Dictionary) {
-            externalWeather = processBackgroundData(data.get("forecast"));
+            Storage.setValue("igaface_weatherData", data);
+
+            var forecast = data.get("forecast");
+            addForecastTime(forecast);
+            externalWeather = forecast;
             var locationDict = data.get("location");
             externalForecastLocation = new Position.Location({
                     :latitude => locationDict.get("lat"),
@@ -357,11 +370,10 @@ class IgafaceView extends WatchUi.WatchFace {
         }
     }
 
-    function processBackgroundData(data as Array<Dictionary>) as Array<Dictionary> {
+    function addForecastTime(data as Array<Dictionary>) {
         for (var i = 0; i < data.size(); i++) {
             data[i].put("forecastTime", TimeUtil.parseTime(data[i].get("time").toString()));
         }
-        return data;
     }
 
     function isWeatherDataUpdated() as Boolean {
