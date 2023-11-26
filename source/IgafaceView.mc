@@ -295,7 +295,7 @@ class IgafaceView extends WatchUi.WatchFace {
         } else if (isStepsVisible) {
             drawSteps(dc, steps);
         } else if (isErrorVisible) {
-            drawError(dc, "no weather data", "connect to garmin app");
+            drawError(dc, "no weather data", getNoWeatherErrorText());
         }
 
         if (isStaticWeatherVisible) {
@@ -340,6 +340,14 @@ class IgafaceView extends WatchUi.WatchFace {
     // Terminate any active timers and prepare for slow updates.
     function onEnterSleep() as Void {
         isSleepMode = true;
+    }
+
+    function getNoWeatherErrorText() as String {
+        if (System has :ServiceDelegate && !System.getDeviceSettings().connectionAvailable) {
+            return "connect to garmin app";
+        } else {
+            return "run GPS activity";
+        }
     }
 
     function retrieveSavedWeather() {
