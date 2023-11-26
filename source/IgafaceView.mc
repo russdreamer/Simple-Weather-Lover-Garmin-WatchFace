@@ -722,11 +722,11 @@ class IgafaceView extends WatchUi.WatchFace {
                 cityName = cachedCityName;
             } else {
                 previousObservationLocationName = locationName;
-                var lengthLimit = 18;
+                var lengthLimit = 17;
                 var commaIndex = locationName.find(",");
                 if (commaIndex != null) {
                     if (commaIndex >= lengthLimit) {
-                        cityName = locationName.substring(0, lengthLimit).toUpper();
+                        cityName = locationName.substring(0, lengthLimit - 2).toUpper() + "...";
                     } else {
                         cityName = locationName.substring(0, commaIndex).toUpper();
                     }
@@ -745,8 +745,12 @@ class IgafaceView extends WatchUi.WatchFace {
             if (locationName.equals(previousObservationLocationName)) {
                 cityName = cachedCityName;
             } else {
-                var lengthLimit = 18;
-                cityName = locationName.substring(0, lengthLimit).toUpper();
+                cityName = locationName.toUpper();
+                
+                var lengthLimit = 17;
+                if (cityName.length() > lengthLimit) {
+                    cityName = cityName.substring(0, lengthLimit - 2) + "...";
+                }
                 previousObservationLocationName = locationName;
                 cachedCityName = cityName;
                 isCityNameSupportedWithCustomFont = isSupportedWithCustomFontString(cityName);
