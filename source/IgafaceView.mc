@@ -112,6 +112,8 @@ class IgafaceView extends WatchUi.WatchFace {
         iconSize = screenWidth / 8;
 
         locator = new Locator();
+        locator.enableLog();
+        
         isSleepMode = false;
         isShiftingWeatherVisible = false;
         isStaticWeatherVisible = false;
@@ -605,6 +607,7 @@ class IgafaceView extends WatchUi.WatchFace {
 
     function triggerExternalWeather(now) {
         var minorDistanceChangeMeters = 200;
+        var newLocation = null;
 
         if (System has :ServiceDelegate && System.getDeviceSettings().connectionAvailable) {
             var needToRegister = false;
@@ -613,7 +616,7 @@ class IgafaceView extends WatchUi.WatchFace {
                 var elapsedTime = now.compare(lastExternalWeatherTime);
                 if (elapsedTime > 5 * 60) {
                     if (externalWeather != null) {
-                        var newLocation = locator.getNewLocation();
+                        newLocation = locator.getNewLocation();
                         if (newLocation != null) {
                             var isLocationChanged = !Locator.locationToGeoString(newLocation).equals(externalForecastLocationGeoString);
                             var isLocChangeSignificant = false; // by default
@@ -632,7 +635,7 @@ class IgafaceView extends WatchUi.WatchFace {
                 needToRegister = true;
             }
 
-            if (needToRegister && locator.getNewLocation() != null) {
+            if (needToRegister && (newLocation != null || locator.getNewLocation() != null)) {
                 Background.registerForTemporalEvent(now);
             }
         }
