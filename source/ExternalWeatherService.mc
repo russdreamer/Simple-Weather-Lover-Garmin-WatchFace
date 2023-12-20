@@ -17,9 +17,7 @@ class ExternalWeatherService extends Toybox.System.ServiceDelegate {
 
     (:background_method)
     function onTemporalEvent() {
-        System.println(TimeUtil.getCurrentTimeString() + ": in background");
         var newLocation = locator.getNewLocation();
-        sendLogs(newLocation, null);
         if (newLocation == null)  {
             Toybox.Background.exit(null);
             return;
@@ -71,7 +69,6 @@ class ExternalWeatherService extends Toybox.System.ServiceDelegate {
                 }
             }
         } else {
-            sendLogs(null, "weatherResponseCallback failed to send: " + StringUtil.reformatMarkDown(data));
             Toybox.Background.exit(null);
         }
     }
@@ -96,21 +93,13 @@ class ExternalWeatherService extends Toybox.System.ServiceDelegate {
 
     (:background_method)
     function cityResponseCallback(responseCode as Number, data as String or Dictionary or Null) as Void {
-        if (responseCode == 200) {
-            if (data == null) {
-                sendLogs(null, "city data was null");
-            } else if (data instanceof String) {
-                sendLogs(null, "Error in city data: " + StringUtil.reformatMarkDown(data));
-            } else if (data.get("address") == null) {
-                sendLogs(null, "Unknown city data address: " + StringUtil.reformatMarkDown(data.toString()));
-            }
+        if (responseCode == 200 && data.get("address") != null) {
             var cityName = parseCityName(data);
             cityName = cityName != null ? cityName : "";
             Storage.setValue("externalWeatherService_lastSeenLocationGeoString", newLocationGeoString);
             Storage.setValue("externalWeatherService_lastknownCityName", cityName);
             weatherData.put("locationName", cityName);
         } else {
-            sendLogs(null, "cityResponseCallback failed to send: " + StringUtil.reformatMarkDown(data));
             Storage.deleteValue("externalWeatherService_lastknownCityName");
         }
 
@@ -171,48 +160,5 @@ class ExternalWeatherService extends Toybox.System.ServiceDelegate {
     (:background_method)
     function getCurrentTimeString() as String {
         return TimeUtil.getCurrentUTCTimeString();
-    }
-
-    (:background_method)
-    function sendLogs(location as Toybox.Position.Location or Null, possibleLogs as String or Null) {
-        System.println(TimeUtil.getCurrentTimeString() + ": sending logs..");
-        var logs = Storage.getValue("logs");
-        Storage.deleteValue("logs");
-        if (logs == null) {
-            logs = "Storage was empty";
-        }
-
-        if (location != null) {
-            logs = logs + " and location was: " + StringUtil.reformatMarkDown(Locator.locationToGeoString(location));
-        }
-         
-        if (possibleLogs != null) {
-            logs = logs + " and " + possibleLogs;
-        }
-
-        if (logs.equals("")) {
-            logs = "no logs and no location";
-        }
-
-
-        var url = "https://d73y1wz7yh.execute-api.eu-north-1.amazonaws.com/prod/logsender";
-        var params = {
-            "channelId" => "a935d0d2-96c9-11ee-b9d1-0242ac120002",
-            "message" => logs,
-        } as Dictionary<String, String or Number or Double>;
-        var options = {
-            :method => Communications.HTTP_REQUEST_METHOD_POST,
-            :headers => {"Content-Type" => Communications.REQUEST_CONTENT_TYPE_JSON},
-            :responseType => Communications.HTTP_RESPONSE_CONTENT_TYPE_TEXT_PLAIN,
-        };
-        Toybox.Communications.makeWebRequest(url, params, options, method(:logsResponseCallback));
-    }
-
-    (:background_method)
-    function logsResponseCallback(responseCode as Number, data as String or Dictionary or Null) as Void {
-        if (responseCode != 200) {
-            System.println(responseCode + ": " + data);
-        }
-        System.println(TimeUtil.getCurrentTimeString() + ": logs are sent");
     }
 }

@@ -112,8 +112,6 @@ class IgafaceView extends WatchUi.WatchFace {
         iconSize = screenWidth / 8;
 
         locator = new Locator();
-        locator.enableLog();
-        
         isSleepMode = false;
         isShiftingWeatherVisible = false;
         isStaticWeatherVisible = false;

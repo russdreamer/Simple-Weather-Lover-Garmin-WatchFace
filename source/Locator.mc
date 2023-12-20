@@ -8,31 +8,9 @@ import Toybox.Math;
 (:background)
 class Locator {
     private var lastSeenLocationHolder as LocationHolder or Null;
-    private var logEnabled = false;
-    private var lastSource = null;
-    private var lastSourcExact = null;
-    private var logs = "";
-
-    function enableLog() {
-        logEnabled = true;
-    }
 
     function getNewLocation() as Position.Location {
-        //Storage.deleteValue("logs");
-        logs = "";
-        /*if (lastSeenLocationHolder != null) {
-            printLog("lastSeenLocationHolder.locationDegrees = " + lastSeenLocationHolder.locationDegrees);
-        } else {
-            printLog("lastSeenLocationHolder is null");
-        }
-        if (lastSource == null) {
-            printLog("lastSource is null");
-        }
-        if (lastSourcExact == null) {
-            printLog("lastSourcExact is null");
-        }*/
-
-        var storedActivityLocation = Storage.getValue("locator_lastSeenActivityLocation");
+       var storedActivityLocation = Storage.getValue("locator_lastSeenActivityLocation");
         var storedPositionLocation = Storage.getValue("locator_lastSeenPositionLocation");
         var actualActivityLocation = Activity.getActivityInfo().currentLocation;
         var actualPositionLocation = Toybox.Position.getInfo().position;
@@ -47,63 +25,27 @@ class Locator {
         
 
         var mostRecentLocationHolder = getMostRecentLocation(activityLocationHolder, positionLocationHolder);
-        if (mostRecentLocationHolder != null) {
-            if (mostRecentLocationHolder == activityLocationHolder && !"activityLocationHolder".equals(lastSourcExact)) {
-                printLog("Most recent location: activityLocationHolder");
-                lastSourcExact = "activityLocationHolder";
-            } else if (mostRecentLocationHolder == positionLocationHolder && !"positionLocationHolder".equals(lastSourcExact)) {
-                printLog("Most recent location: positionLocationHolder");
-                lastSourcExact = "positionLocationHolder";
-            } else if (mostRecentLocationHolder != activityLocationHolder && mostRecentLocationHolder != positionLocationHolder && lastSourcExact != null) {
-                printLog("Most recent location: unknown");
-                lastSourcExact = null;
-            }
-        } else if (lastSourcExact != null) {
-            printLog("Most recent location is null");
-            lastSourcExact = null;
-        }
         var location = null;
-
         
         if (mostRecentLocationHolder.locationDegrees != null) {
             if (lastSeenLocationHolder == null || !mostRecentLocationHolder.locationDegrees.equals(lastSeenLocationHolder.locationDegrees)) {
                 getOrInitHolderPosition(mostRecentLocationHolder);
                 if (isCorrectLocation(mostRecentLocationHolder.location)) {
-                    if (!"mostRecentLocationHolder".equals(lastSource)) {
-                        printLog("location got from mostRecentLocationHolder");
-                        lastSource = "mostRecentLocationHolder";
-                    }
-                    prinRawLog(rm("lastSeenLocationHolder is updated. Was: ") + (lastSeenLocationHolder != null? toGeoLink(locationToGeoString(lastSeenLocationHolder.location)) : null) + rm("   Now: ") + toGeoLink(locationToGeoString(mostRecentLocationHolder.location)));
                     lastSeenLocationHolder = mostRecentLocationHolder;
                 }
             }
-        } else {
-            printLog("mostRecentLocationHolder.locationDegrees is null");
         }
+        
         location = lastSeenLocationHolder != null ? lastSeenLocationHolder.location : null;
         
         if (Toybox has :Weather && isIncorrectLocation(location)) {
             var weatherConditions = Weather.getCurrentConditions();
             if (weatherConditions != null) {
-                if (!"Weather.CurrentConditions".equals(lastSource)) {
-                    printLog("location got from Weather.CurrentConditions");
-                    lastSource = "Weather.CurrentConditions";
-                }
                 location = weatherConditions.observationLocationPosition;
             }
         }
 
-        if (isIncorrectLocation(location)) {
-            printLog("location was incorrect");
-        }
-
-        saveLog();
-
         return isCorrectLocation(location) ? location : null;
-    }
-
-    private function toGeoLink(location as String) {
-        return "[" + StringUtil.reformatMarkDown(location) + "](https://www.google.com/maps/place/" + StringUtil.stringReplace(location, " ", "") + ")";
     }
 
     private function getMostRecentLocation(activityLocationHolder as LocationHolder, positionLocationHolder as LocationHolder) as LocationHolder {
@@ -126,7 +68,6 @@ class Locator {
         var actualLocationDegreesString = locationToDegreesString(actualLocation);
         
         if (isCorrectLocation(actualLocation) && (locationHolder.locationDegrees == null || !locationHolder.locationDegrees.equals(actualLocationDegreesString))) {
-            //printLog(proxy("stored location was updated and saved into storage"));
             locationHolder.locationDegrees = actualLocationDegreesString;
             locationHolder.locationUTCTime = now;
             saveToStorage(storageKey, locationHolder);
@@ -178,7 +119,7 @@ class Locator {
         }
 
         var degrees = location.toDegrees();
-        return degrees[0] > 90 || degrees[0] < -90 || degrees[1] > 180 || degrees[1] < -180;
+        return (degrees[0] == 0 && degrees[1] == 0) || (degrees[0] > 90 || degrees[0] < -90 || degrees[1] > 180 || degrees[1] < -180);
     }
 
     private function getOrInitHolderPosition(holder as LocationHolder) as Position.Location {
@@ -211,47 +152,6 @@ class Locator {
         var distance = earthRadius * c;
 
         return distance;
-    }
-
-    function rm(text) {
-        return StringUtil.reformatMarkDown(text);
-    }
-
-    function printLog(text as String) {
-        if (logEnabled) {
-            prinRawLog(StringUtil.reformatMarkDown(text));
-        }
-    }
-
-    function prinRawLog(text as String) {
-        if (text.equals("")) {
-            return;
-        }
-        if (logEnabled) {
-            var splitter = "";
-            if (!logs.equals("")) {
-                splitter = "\n\r";
-            }
-            logs = logs + splitter + text;
-        }
-    }
-
-    function saveLog() {
-        if (!logEnabled || logs.equals("")) {
-            return;
-        }
-
-        var prevLogs = Storage.getValue("logs");
-        Storage.deleteValue("logs");
-        var splitter = "";
-        if (prevLogs == null) {
-            prevLogs = "";
-        } else {
-            splitter = "\n\r";
-        }
-        
-        logs = StringUtil.reformatMarkDown(TimeUtil.getCurrentTimeString()) + ":" + "\n\r" + logs;
-        Storage.setValue("logs", prevLogs + splitter + logs);
     }
 
     class LocationHolder {
