@@ -8,6 +8,7 @@
     <string id="ImperialFormatTitle">Use Imperial Weather Format (°F, Miles)</string>
     <string id="PrecipitationFormatTitle">Precipitation Format (when possible)</string>
     <string id="AccentColorTitle">Collor for seconds and battery lines</string>
+    <string id="TextColorTitle">Collor for digits and forecast text</string>
     <string id="DataOnWristTurnTitle">Data on wrist turn</string>
     <string id="LowPowerModeTitle">Default data field</string>
     <string id="ShowSecondsCircleTitle">Show seconds circle line on wrist turn</string>

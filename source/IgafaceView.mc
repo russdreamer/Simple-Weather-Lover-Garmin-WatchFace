@@ -17,6 +17,7 @@ class IgafaceView extends WatchUi.WatchFace {
     var timeThinFont;
     var dataFont;
     var accentColor;
+    var textColor;
     var wasSleepMode;
     var isSleepMode;
     var isShiftingWeatherVisible;
@@ -171,6 +172,8 @@ class IgafaceView extends WatchUi.WatchFace {
         var currentTime = Gregorian.info(now, Time.FORMAT_SHORT);
         isEvenMinuteTime = currentTime.min % 2;
         accentColor = Application.Properties.getValue("AccentColor");
+        textColor = requiresBurnInProtection && isSleepMode ? Graphics.COLOR_WHITE : Application.Properties.getValue("TextColor");
+        var backgroundColor = requiresBurnInProtection && isSleepMode ? Graphics.COLOR_BLACK : Application.Properties.getValue("BackgroundColor");
         var isWeatherDefaultField = Application.Properties.getValue("LowPowerMode") == 0;
         var toShowSeconds = Application.Properties.getValue("ShowSecondsCircle");
         var dataOnWristTurn = Application.Properties.getValue("DataOnWristTurn");
@@ -267,6 +270,8 @@ class IgafaceView extends WatchUi.WatchFace {
         }
 
         View.onUpdate(dc);
+        dc.setColor(backgroundColor, backgroundColor);
+        dc.clear();
         if (Dc has :setAntiAlias) {
             dc.setAntiAlias(true);
         }
@@ -429,7 +434,7 @@ class IgafaceView extends WatchUi.WatchFace {
     }
 
     function drawTime(dc as Dc, time as String) {
-        dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_TRANSPARENT);
+        dc.setColor(textColor, Graphics.COLOR_TRANSPARENT);
         var font = requiresBurnInProtection && isSleepMode ? timeThinFont : timeFont;
 
         if (requiresBurnInProtection && isSleepMode && isEvenMinuteTime) {
@@ -440,7 +445,7 @@ class IgafaceView extends WatchUi.WatchFace {
     }
 
     function drawDate(dc as Dc, date as String) {
-        dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_TRANSPARENT);
+        dc.setColor(textColor, Graphics.COLOR_TRANSPARENT);
 
         if (requiresBurnInProtection && isSleepMode && isEvenMinuteTime) {
             dc.drawText(screenWidth * 0.15, screenHeight * 0.43, dataFont, date, Graphics.TEXT_JUSTIFY_LEFT);
@@ -450,12 +455,12 @@ class IgafaceView extends WatchUi.WatchFace {
     }
 
     function drawSteps(dc as Dc, stepsNumber as String) {
-        dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_TRANSPARENT);
+        dc.setColor(textColor, Graphics.COLOR_TRANSPARENT);
         dc.drawText(screenWidth * 0.5, screenHeight * 0.8, dataFont, stepsNumber, Graphics.TEXT_JUSTIFY_LEFT);
     }
 
     function drawError(dc as Dc, tittle as String, errorBody as String) {
-        dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_TRANSPARENT);
+        dc.setColor(textColor, Graphics.COLOR_TRANSPARENT);
         dc.drawText(screenWidth * 0.5, screenHeight * 0.7, Graphics.FONT_XTINY, tittle, Graphics.TEXT_JUSTIFY_CENTER);
         dc.drawText(screenWidth * 0.5, screenHeight * 0.78, Graphics.FONT_XTINY, errorBody, Graphics.TEXT_JUSTIFY_CENTER);
     }
@@ -480,18 +485,18 @@ class IgafaceView extends WatchUi.WatchFace {
     }
 
     function drawDetailedWeatherTime(dc as Dc, weatherTime as String) {
-        dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_TRANSPARENT);
+        dc.setColor(textColor, Graphics.COLOR_TRANSPARENT);
         var font = toShowCityName && !isCityNameSupportedWithCustomFont ? Graphics.FONT_XTINY : dataFont;
         dc.drawText(screenWidth * 0.5, screenHeight * 0.7, font, weatherTime, Graphics.TEXT_JUSTIFY_CENTER);
     }
 
     function drawDetailedWeatherData(dc as Dc, weatherData as String) {
-        dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_TRANSPARENT);
+        dc.setColor(textColor, Graphics.COLOR_TRANSPARENT);
         dc.drawText(screenWidth * 0.5, screenHeight * 0.78, dataFont, weatherData, Graphics.TEXT_JUSTIFY_CENTER);
     }
 
     function drawWeatherData(dc as Dc, weatherData as String) {
-        dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_TRANSPARENT);
+        dc.setColor(textColor, Graphics.COLOR_TRANSPARENT);
 
         if (requiresBurnInProtection && isSleepMode) {
             if (isEvenMinuteTime) {
