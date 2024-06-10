@@ -587,7 +587,7 @@ class IgafaceView extends WatchUi.WatchFace {
     }
 
     function isCurrentInternalWeatherAvailable(internalWeatherConditions, now) {
-        return isWeatherConditionAvailable(internalWeatherConditions) && isCurrentTemperatureAvailable(internalWeatherConditions, now);
+        return internalWeatherConditions != null && isWeatherConditionAvailable(internalWeatherConditions) && isCurrentTemperatureAvailable(internalWeatherConditions, now);
     }
 
     function isWeatherConditionAvailable(internalWeatherConditions) {
@@ -863,9 +863,9 @@ class IgafaceView extends WatchUi.WatchFace {
 
     function getCurrentWeatherTemperature(currentSource) {
         if (currentSource == INTERNAL_CONDITION) {
-            return internalWeatherConditions.temperature;
+            return Math.round(internalWeatherConditions.temperature).toNumber();
         } else if (currentSource == INTERNAL_HOURLY) {
-            return internalHourlyForecast[0].temperature;
+            return Math.round(internalHourlyForecast[0].temperature).toNumber();
         } else if (currentSource == EXTERNAL) {
             return currentExternalWeather["temperature"];
         } else {
@@ -874,10 +874,8 @@ class IgafaceView extends WatchUi.WatchFace {
     }
 
     function getWeatherTemperature(weather as Dictionary or HourlyForecast or CurrentConditions) {
-        if (Toybox has :Weather && weather instanceof CurrentConditions) {
-            return weather.temperature;
-        } else if (Toybox has :Weather && weather instanceof HourlyForecast) {
-            return weather.temperature;
+        if (Toybox has :Weather && (weather instanceof CurrentConditions || weather instanceof HourlyForecast)) {
+            return Math.round(weather.temperature).toNumber();
         } else if (weather instanceof Dictionary) {
             return weather["temperature"];
         }
