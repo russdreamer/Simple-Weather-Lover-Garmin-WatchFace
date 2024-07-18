@@ -18,6 +18,7 @@ class IgafaceView extends WatchUi.WatchFace {
     var dataFont;
     var accentColor;
     var textColor;
+    var backgroundColor;
     var wasSleepMode;
     var isSleepMode;
     var isShiftingWeatherVisible;
@@ -171,11 +172,12 @@ class IgafaceView extends WatchUi.WatchFace {
 
         var currentTime = Gregorian.info(now, Time.FORMAT_SHORT);
         isEvenMinuteTime = currentTime.min % 2;
-        accentColor = Application.Properties.getValue("AccentColor");
+        accentColor = requiresBurnInProtection && isSleepMode ? Graphics.COLOR_WHITE : Application.Properties.getValue("AccentColor");
         textColor = requiresBurnInProtection && isSleepMode ? Graphics.COLOR_WHITE : Application.Properties.getValue("TextColor");
-        var backgroundColor = requiresBurnInProtection && isSleepMode ? Graphics.COLOR_BLACK : Application.Properties.getValue("BackgroundColor");
+        backgroundColor = requiresBurnInProtection && isSleepMode ? Graphics.COLOR_BLACK : Application.Properties.getValue("BackgroundColor");
         var isWeatherDefaultField = Application.Properties.getValue("LowPowerMode") == 0;
         var toShowSeconds = Application.Properties.getValue("ShowSecondsCircle");
+        var toShowWeatherBg = Application.Properties.getValue("ShowWeatherBg");
         var dataOnWristTurn = Application.Properties.getValue("DataOnWristTurn");
         useImperialFormat = Application.Properties.getValue("UseImperialFormat");
         precipitationInMilimeters = Application.Properties.getValue("PrecipitationFormat") == 0;
@@ -304,7 +306,7 @@ class IgafaceView extends WatchUi.WatchFace {
         }
 
         if (isStaticWeatherVisible) {
-            drawWeatherInfo(dc, now);
+            drawWeatherInfo(dc, now, toShowWeatherBg);
         } else if (isShiftingWeatherVisible) {
              if (showStaticDetailedWeather) {
                 cachedDetailedWeatherIcon = getCurrentWeatherIcon(currentWeatherSource, now);
@@ -315,7 +317,7 @@ class IgafaceView extends WatchUi.WatchFace {
                     cachedDetailedWeatherIcon = getDetailedForecastIcon(cachedHourlyForecast[nextForecastIndex - 1], now);
                 }
             }
-            drawDetailedWeatherInfo(dc);
+            drawDetailedWeatherInfo(dc, toShowWeatherBg);
         } else if (isStepsVisible) {
             drawStepsIcon(dc);
         }
@@ -465,23 +467,23 @@ class IgafaceView extends WatchUi.WatchFace {
         dc.drawText(screenWidth * 0.5, screenHeight * 0.78, Graphics.FONT_XTINY, errorBody, Graphics.TEXT_JUSTIFY_CENTER);
     }
 
-    function drawDetailedWeatherInfo(dc as Dc) {
+    function drawDetailedWeatherInfo(dc as Dc, drawBackground as Boolean) {
+        if (cachedDetailedWeatherIcon != null)  {
+            drawDetailedWeatherIcon(dc, cachedDetailedWeatherIcon, drawBackground);
+        }
         if (cachedWeatherTime != null && !cachedWeatherTime.equals("")) {
             drawDetailedWeatherTime(dc, cachedWeatherTime);
         }
         if (cachedDetailedWeatherData != null && !cachedDetailedWeatherData.equals("")) {
             drawDetailedWeatherData(dc, cachedDetailedWeatherData);
         }
-        if (cachedDetailedWeatherIcon != null)  {
-            drawDetailedWeatherIcon(dc, cachedDetailedWeatherIcon);
-        }
     }
 
-    function drawWeatherInfo(dc as Dc, now as Time.Moment) {
+    function drawWeatherInfo(dc as Dc, now as Time.Moment, drawBackground as Boolean) {
+        drawWeatherIcon(dc, now, drawBackground);
         if (cachedWeatherData != null && !cachedWeatherData.equals("")) {
             drawWeatherData(dc, cachedWeatherData);
         }
-        drawWeatherIcon(dc, now);
     }
 
     function drawDetailedWeatherTime(dc as Dc, weatherTime as String) {
@@ -509,23 +511,43 @@ class IgafaceView extends WatchUi.WatchFace {
         }
     }
 
-    function drawWeatherIcon(dc as Dc, now as Time.Moment) {
+    function drawWeatherIcon(dc as Dc, now as Time.Moment, drawBackground as Boolean) {
         var weatherIcon = getCurrentWeatherIcon(currentWeatherSource, now);
         if (weatherIcon != null) {
+            var iconXPos = screenWidth * 0.5 + iconSize / 8;
+
             if (requiresBurnInProtection && isSleepMode) {
                 if (isEvenMinuteTime) {
-                    dc.drawBitmap(screenWidth * 0.5 + iconSize / 8, screenHeight * 0.1 - iconSize / 4, weatherIcon);
+                    var iconYPos = screenHeight * 0.1 - iconSize / 4;
+                    dc.drawBitmap(iconXPos, iconYPos, weatherIcon);
                 } else {
-                    dc.drawBitmap(screenWidth * 0.5 + iconSize / 8, screenHeight * 0.9 - iconSize / 4, weatherIcon);
+                    var iconYPos = screenHeight * 0.9 - iconSize / 4;
+                    dc.drawBitmap(iconXPos, iconYPos, weatherIcon);
                 }
             } else {
-                dc.drawBitmap(screenWidth * 0.5 + iconSize / 8, screenHeight * 0.8 - iconSize / 4, weatherIcon);
+                var iconYPos = screenHeight * 0.8 - iconSize / 4;
+                if (drawBackground) {
+                    drawWeatherBackgroundCircle(dc, iconXPos + iconSize / 2, iconYPos + iconSize / 2);
+                }
+                dc.drawBitmap(iconXPos, iconYPos, weatherIcon);
             }
         }
     }
 
-    function drawDetailedWeatherIcon(dc as Dc, weatherIcon as Graphics.BitmapType) {
+    function drawDetailedWeatherIcon(dc as Dc, weatherIcon as Graphics.BitmapType, drawBackground as Boolean) {
+        if (drawBackground) {
+            drawWeatherBackgroundCircle(dc, screenWidth * 0.5, screenHeight * 0.85 + iconSize / 2);
+        }
         dc.drawBitmap(screenWidth * 0.5 - iconSize / 2, screenHeight * 0.85, weatherIcon);
+    }
+
+    function drawWeatherBackgroundCircle(dc as Dc, xPos as Number, yPos as Number) {
+        var radius = iconSize / 2;
+        dc.setColor(getWeatherBgColor(), Graphics.COLOR_TRANSPARENT);
+        dc.fillCircle(xPos, yPos, radius);
+        dc.setColor(textColor, Graphics.COLOR_TRANSPARENT);
+        dc.setPenWidth(1);
+        dc.drawCircle(xPos, yPos, radius);
     }
 
     function drawStepsIcon(dc) {
@@ -546,7 +568,7 @@ class IgafaceView extends WatchUi.WatchFace {
         var lineLength = screenWidth * 0.85 - screenWidth / 2;
         var penWidth = 4;
         dc.setPenWidth(penWidth / 2);
-        dc.setColor(Graphics.COLOR_LT_GRAY, Graphics.COLOR_TRANSPARENT);
+        dc.setColor(getBatteryBgColor(), Graphics.COLOR_TRANSPARENT);
         dc.drawLine(cx, cy + penWidth / 4, cx + lineLength, cy + penWidth / 4);
         dc.setPenWidth(penWidth);
         dc.setColor(accentColor, Graphics.COLOR_TRANSPARENT);
@@ -710,6 +732,54 @@ class IgafaceView extends WatchUi.WatchFace {
 
     function getSteps() {
         return Lang.format("$1$", [ActivityMonitor.getInfo().steps]);
+    }
+
+    function getWeatherBgColor() {
+        switch (backgroundColor) {
+            case 0xFFAA00: return 0x550000; // orange
+            case 0xFF0000: return 0x550000; // red
+            case 0xff0099: return 0x550000; // pink
+            case 0xAA00FF: return 0x550000; // purple
+            case 0x00AAFF: return 0x000055; // blue
+            case 0x00ffff: return 0x000055; // aqua
+            case 0x00AA00: return 0x005500; // green
+            case 0x55FF00: return 0x555500; // lime
+            case 0xffff00: return 0x555500; // yellow
+            case 0xffffff: return 0x555555; // white
+            case 0xAAAAAA: return 0x555555; // grey
+            case 0x000000: return 0x555555; // black
+            default: return 0x000000;
+        }
+    }
+
+    function getBatteryBgColor() {
+        if (backgroundColor == Graphics.COLOR_BLACK) {
+            if (accentColor == Graphics.COLOR_LT_GRAY) {
+                return 0x555555;
+            } else {
+                return 0xAAAAAA;
+            }
+        } else {
+            return 0x555555;
+        }
+    }
+
+    function isDarkColor(color) {
+        switch (color) {
+            case 0xFFAA00: return false; // orange
+            case 0xFF0000: return false; // red
+            case 0xff0099: return false; // pink
+            case 0xAA00FF: return true; // purple
+            case 0x00AAFF: return true; // blue
+            case 0x00ffff: return false; // aqua
+            case 0x00AA00: return true; // green
+            case 0x55FF00: return false; // lime
+            case 0xffff00: return false; // yellow
+            case 0xffffff: return false; // white
+            case 0xAAAAAA: return false; // grey
+            case 0x000000: return true; // black
+            default: return false;
+        }
     }
 
     function getCurrentLocationName(currentSource) {

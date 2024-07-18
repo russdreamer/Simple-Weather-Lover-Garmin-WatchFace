@@ -74,6 +74,10 @@
         </settingConfig>
     </setting>
 
+    <setting propertyKey="@Properties.ShowWeatherBg" title="@Strings.ShowWeatherBgTitle">
+        <settingConfig type="boolean" />
+    </setting>
+
     <setting propertyKey="@Properties.ShowSecondsCircle" title="@Strings.ShowSecondsCircleTitle">
         <settingConfig type="boolean" />
     </setting>

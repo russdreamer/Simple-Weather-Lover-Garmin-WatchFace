@@ -7,6 +7,7 @@
     <property id="DataOnWristTurn" type="number">2</property>
     <property id="PrecipitationFormat" type="number">0</property>
     <property id="ShowSecondsCircle" type="boolean">true</property>
+    <property id="ShowWeatherBg" type="boolean">true</property>
     <property id="LowPowerMode" type="number">0</property>
     <property id="AccentColor" type="number">0xFF0000</property>
 
