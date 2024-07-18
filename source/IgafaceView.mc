@@ -747,13 +747,13 @@ class IgafaceView extends WatchUi.WatchFace {
             case 0xffff00: return 0x555500; // yellow
             case 0xffffff: return 0x555555; // white
             case 0xAAAAAA: return 0x555555; // grey
-            case 0x000000: return 0x555555; // black
+            case 0x000000: return 0x000000; // black
             default: return 0x000000;
         }
     }
 
     function getBatteryBgColor() {
-        if (backgroundColor == Graphics.COLOR_BLACK) {
+        if (isDarkColor(backgroundColor)) {
             if (accentColor == Graphics.COLOR_LT_GRAY) {
                 return 0x555555;
             } else {
@@ -767,10 +767,10 @@ class IgafaceView extends WatchUi.WatchFace {
     function isDarkColor(color) {
         switch (color) {
             case 0xFFAA00: return false; // orange
-            case 0xFF0000: return false; // red
-            case 0xff0099: return false; // pink
+            case 0xFF0000: return true; // red
+            case 0xff0099: return true; // pink
             case 0xAA00FF: return true; // purple
-            case 0x00AAFF: return true; // blue
+            case 0x00AAFF: return false; // blue
             case 0x00ffff: return false; // aqua
             case 0x00AA00: return true; // green
             case 0x55FF00: return false; // lime
